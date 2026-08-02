@@ -1,0 +1,40 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.12.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\pdf-tools\.npmrc
+5 silly config load:file:C:\Users\leyam\.npmrc
+6 silly config load:file:C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\pdf-tools\etc\npmrc
+7 verbose title npm install .\tmp\pdf-tools\canvas-1.0.3.tgz .\tmp\pdf-tools\canvas-win32-x64-msvc-1.0.3.tgz
+8 verbose argv "install" "--offline" "--no-audit" "--no-fund" "--cache" ".\\tmp\\npm-cache" "--prefix" "tmp\\pdf-tools" ".\\tmp\\pdf-tools\\canvas-1.0.3.tgz" ".\\tmp\\pdf-tools\\canvas-win32-x64-msvc-1.0.3.tgz"
+9 verbose logfile logs-max:10 dir:C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\npm-cache\_logs\2026-08-02T01_01_58_690Z-
+10 verbose logfile C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\npm-cache\_logs\2026-08-02T01_01_58_690Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 silly idealTree buildDeps
+14 silly fetch manifest @napi-rs/canvas@file:canvas-1.0.3.tgz
+15 silly fetch manifest @napi-rs/canvas-win32-x64-msvc@file:canvas-win32-x64-msvc-1.0.3.tgz
+16 silly placeDep ROOT @napi-rs/canvas@1.0.3 OK for:  want: file:canvas-1.0.3.tgz
+17 verbose stack TypeError: Invalid Version: 
+17 verbose stack     at new SemVer (C:\Program Files\nodejs\node_modules\npm\node_modules\semver\classes\semver.js:40:13)
+17 verbose stack     at compare (C:\Program Files\nodejs\node_modules\npm\node_modules\semver\functions\compare.js:5:32)
+17 verbose stack     at Object.eq (C:\Program Files\nodejs\node_modules\npm\node_modules\semver\functions\eq.js:4:29)
+17 verbose stack     at Node.canDedupe (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\node.js:1140:32)
+17 verbose stack     at PlaceDep.pruneDedupable (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\place-dep.js:426:14)
+17 verbose stack     at new PlaceDep (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\place-dep.js:278:14)
+17 verbose stack     at #buildDepStep (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\build-ideal-tree.js:945:18)
+17 verbose stack     at async Arborist.buildIdealTree (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\build-ideal-tree.js:182:7)
+17 verbose stack     at async Promise.all (index 1)
+17 verbose stack     at async Arborist.reify (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\reify.js:114:5)
+18 error Invalid Version: 
+19 silly unfinished npm timer reify 1785632519704
+20 silly unfinished npm timer reify:loadTrees 1785632519707
+21 silly unfinished npm timer idealTree:buildDeps 1785632520158
+22 silly unfinished npm timer idealTree:#root 1785632520158
+23 verbose cwd C:\Users\leyam\Desktop\Proyectos\clinica-municipal
+24 verbose os Windows_NT 10.0.22631
+25 verbose node v24.12.0
+26 verbose npm  v11.6.2
+27 verbose exit 1
+28 verbose code 1
+29 error A complete log of this run can be found in: C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\npm-cache\_logs\2026-08-02T01_01_58_690Z-debug-0.log

@@ -1,0 +1,318 @@
+.printRoot {
+  display: none;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 11mm 10mm 12mm;
+}
+
+@media print {
+  :global(html),
+  :global(body) {
+    min-width: 0;
+    color: #17201e;
+    background: #fff;
+  }
+
+  :global(body *) {
+    visibility: hidden !important;
+  }
+
+  .printRoot,
+  .printRoot * {
+    visibility: visible !important;
+  }
+
+  .printRoot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: block;
+    color: #17201e;
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8.2pt;
+    line-height: 1.35;
+  }
+
+  .documentHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12mm;
+    padding-bottom: 4mm;
+    border-bottom: 1.5pt solid #164347;
+  }
+
+  .organization {
+    color: #164347;
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .documentHeader h1 {
+    margin: 1mm 0 0;
+    font-size: 17pt;
+    line-height: 1.15;
+  }
+
+  .documentHeader p {
+    margin: 1mm 0 0;
+    color: #5d6966;
+  }
+
+  .documentStatus {
+    min-width: 35mm;
+    padding: 3mm 4mm;
+    border: 1pt solid #b8cbc5;
+    text-align: right;
+  }
+
+  .documentStatus span,
+  .documentStatus strong,
+  .caseTable strong,
+  .caseTable small,
+  .serviceLine {
+    display: block;
+  }
+
+  .documentStatus span {
+    color: #5d6966;
+    font-size: 7pt;
+    text-transform: uppercase;
+  }
+
+  .documentStatus strong {
+    margin-top: 0.5mm;
+    color: #164347;
+    font-size: 10pt;
+  }
+
+  .identityGrid {
+    display: grid;
+    grid-template-columns: 0.7fr 1fr 1fr 1.8fr;
+    margin: 0 0 4mm;
+    border-right: 0.7pt solid #cfd7d4;
+    border-bottom: 0.7pt solid #cfd7d4;
+  }
+
+  .identityGrid > div {
+    min-width: 0;
+    padding: 2.4mm 3mm;
+    border-left: 0.7pt solid #cfd7d4;
+  }
+
+  .identityGrid dt,
+  .identityGrid dd,
+  .summaryGrid dt,
+  .summaryGrid dd,
+  .notesSection dt,
+  .notesSection dd {
+    margin: 0;
+  }
+
+  .identityGrid dt,
+  .summaryGrid dt,
+  .notesSection dt {
+    color: #64706d;
+    font-size: 6.8pt;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .identityGrid dd {
+    margin-top: 0.8mm;
+    font-weight: 700;
+  }
+
+  .sessionIdentifier dd {
+    overflow-wrap: anywhere;
+    font-family: "Courier New", monospace;
+    font-size: 7.2pt;
+  }
+
+  .section {
+    margin-top: 4mm;
+  }
+
+  .section h2 {
+    margin: 0 0 1.7mm;
+    color: #164347;
+    font-size: 10pt;
+  }
+
+  .summaryGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0;
+    border-top: 0.7pt solid #cfd7d4;
+    border-left: 0.7pt solid #cfd7d4;
+  }
+
+  .summaryGrid > div {
+    min-width: 0;
+    padding: 2.4mm 3mm;
+    border-right: 0.7pt solid #cfd7d4;
+    border-bottom: 0.7pt solid #cfd7d4;
+  }
+
+  .summaryGrid dd {
+    margin-top: 0.8mm;
+    font-size: 9pt;
+    font-weight: 700;
+  }
+
+  .differenceSummary {
+    background: #eef6f3 !important;
+    print-color-adjust: exact;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    break-inside: auto;
+    font-size: 7.5pt;
+  }
+
+  .table thead {
+    display: table-header-group;
+  }
+
+  .table tr {
+    break-inside: avoid;
+  }
+
+  .table th,
+  .table td {
+    padding: 1.5mm 2mm;
+    border: 0.7pt solid #cfd7d4;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .table th {
+    color: #43504d;
+    background: #eef2f0 !important;
+    font-size: 6.7pt;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    print-color-adjust: exact;
+  }
+
+  .table tfoot td {
+    background: #f6f8f7 !important;
+    font-weight: 700;
+    print-color-adjust: exact;
+  }
+
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    text-align: right !important;
+    white-space: nowrap;
+  }
+
+  .caseTable th:nth-child(1) {
+    width: 16%;
+  }
+
+  .caseTable th:nth-child(2) {
+    width: 21%;
+  }
+
+  .caseTable th:nth-child(3) {
+    width: 31%;
+  }
+
+  .caseTable th:nth-child(4) {
+    width: 20%;
+  }
+
+  .caseTable th:nth-child(5) {
+    width: 12%;
+  }
+
+  .caseTable small {
+    margin-top: 0.5mm;
+    color: #5d6966;
+    font-size: 6.7pt;
+    overflow-wrap: anywhere;
+  }
+
+  .serviceLine + .serviceLine {
+    margin-top: 1.3mm;
+    padding-top: 1.3mm;
+    border-top: 0.5pt solid #dce3e0;
+  }
+
+  .emptyText {
+    margin: 0;
+    padding: 2.4mm 3mm;
+    border: 0.7pt solid #cfd7d4;
+    color: #5d6966;
+  }
+
+  .notesSection {
+    break-inside: avoid;
+  }
+
+  .notesSection dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    border-top: 0.7pt solid #cfd7d4;
+    border-left: 0.7pt solid #cfd7d4;
+  }
+
+  .notesSection dl > div {
+    min-height: 17mm;
+    padding: 2.5mm 3mm;
+    border-right: 0.7pt solid #cfd7d4;
+    border-bottom: 0.7pt solid #cfd7d4;
+  }
+
+  .notesSection dd {
+    margin-top: 1mm;
+    white-space: pre-wrap;
+  }
+
+  .signatures {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18mm;
+    margin: 17mm 12mm 7mm;
+    break-inside: avoid;
+    text-align: center;
+  }
+
+  .signatures span {
+    display: block;
+    margin-bottom: 1.5mm;
+    border-top: 0.7pt solid #4d5956;
+  }
+
+  .signatures strong,
+  .signatures small {
+    display: block;
+  }
+
+  .signatures small {
+    margin-top: 0.6mm;
+    color: #66716e;
+    font-size: 6.8pt;
+  }
+
+  .documentFooter {
+    display: flex;
+    justify-content: space-between;
+    gap: 8mm;
+    padding-top: 2.5mm;
+    border-top: 0.7pt solid #cfd7d4;
+    color: #66716e;
+    font-size: 6.8pt;
+  }
+}

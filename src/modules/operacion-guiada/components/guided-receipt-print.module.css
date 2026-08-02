@@ -1,0 +1,275 @@
+.printRoot {
+  display: none;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
+@media print {
+  :global(html),
+  :global(body) {
+    min-width: 0;
+    color: #3f3f3f;
+    background: #fff;
+  }
+
+  :global(body *) {
+    visibility: hidden !important;
+  }
+
+  .printRoot,
+  .printRoot * {
+    visibility: visible !important;
+  }
+
+  .printRoot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: block;
+    color: #3f3f3f;
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8pt;
+    line-height: 1.25;
+  }
+
+  .copy {
+    box-sizing: border-box;
+    min-height: 273mm;
+    display: flex;
+    flex-direction: column;
+    padding: 8mm;
+    border: 0.6pt solid #aaa;
+    break-inside: avoid;
+  }
+
+  .copy + .copy {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8mm;
+    padding-bottom: 2.5mm;
+    border-bottom: 0.7pt solid #999;
+  }
+
+  .organization {
+    color: #555;
+    font-size: 7pt;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .header h1 {
+    margin: 0.6mm 0 0;
+    color: #333;
+    font-size: 14pt;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .header small,
+  .receiptIdentity small {
+    display: block;
+    margin-top: 0.6mm;
+    color: #777;
+    font-size: 6.8pt;
+  }
+
+  .receiptIdentity {
+    min-width: 42mm;
+    text-align: right;
+  }
+
+  .receiptIdentity span,
+  .receiptIdentity strong {
+    display: block;
+  }
+
+  .receiptIdentity span {
+    color: #777;
+    font-size: 6.5pt;
+    letter-spacing: 0.08em;
+  }
+
+  .receiptIdentity strong {
+    margin-top: 0.5mm;
+    color: #333;
+    font-family: "Courier New", monospace;
+    font-size: 11pt;
+    font-weight: 600;
+  }
+
+  .identityGrid {
+    display: grid;
+    grid-template-columns: 1.7fr 1.1fr 0.65fr 0.9fr;
+    margin: 5mm 0 0;
+    border-top: 0.5pt solid #bbb;
+    border-bottom: 0.5pt solid #bbb;
+  }
+
+  .identityGrid > div {
+    min-width: 0;
+    padding: 3mm;
+    border-right: 0.5pt solid #bbb;
+  }
+
+  .identityGrid > div:last-child {
+    border-right: 0;
+  }
+
+  .identityGrid dt,
+  .identityGrid dd,
+  .paymentSummary dt,
+  .paymentSummary dd {
+    margin: 0;
+  }
+
+  .identityGrid dt,
+  .paymentSummary dt {
+    color: #777;
+    font-size: 6.3pt;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .identityGrid dd,
+  .paymentSummary dd {
+    margin-top: 0.5mm;
+    color: #3a3a3a;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .servicesTable {
+    width: 100%;
+    margin-top: 7mm;
+    border-collapse: collapse;
+    font-size: 7.3pt;
+  }
+
+  .servicesTable th,
+  .servicesTable td {
+    padding: 3mm 2.4mm;
+    border-bottom: 0.5pt solid #bbb;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .servicesTable th {
+    color: #666;
+    font-size: 6.3pt;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .servicesTable strong,
+  .servicesTable small {
+    display: block;
+  }
+
+  .servicesTable strong {
+    font-weight: 600;
+  }
+
+  .servicesTable small {
+    margin-top: 0.3mm;
+    color: #777;
+    font-size: 6.2pt;
+  }
+
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    text-align: right !important;
+    white-space: nowrap;
+  }
+
+  .paymentSummary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    gap: 4mm;
+    margin-top: 8mm;
+  }
+
+  .paymentSummary > dl {
+    display: flex;
+    align-items: flex-start;
+    gap: 7mm;
+    margin: 0;
+    padding: 1.5mm 0;
+  }
+
+  .total {
+    min-width: 42mm;
+    padding: 1.8mm 2.2mm;
+    border: 0.8pt solid #888;
+    text-align: right;
+  }
+
+  .total span,
+  .total strong {
+    display: block;
+  }
+
+  .total span {
+    color: #666;
+    font-size: 6.5pt;
+    text-transform: uppercase;
+  }
+
+  .total strong {
+    margin-top: 0.5mm;
+    color: #222;
+    font-size: 12pt;
+    font-weight: 600;
+  }
+
+  .footer {
+    display: grid;
+    grid-template-columns: 40mm minmax(0, 1fr);
+    align-items: end;
+    gap: 8mm;
+    margin-top: auto;
+    padding-top: 14mm;
+  }
+
+  .footer > div {
+    text-align: center;
+  }
+
+  .signatureLine {
+    display: block;
+    border-top: 0.5pt solid #999;
+  }
+
+  .footer strong {
+    font-weight: 600;
+  }
+
+  .footer > div strong {
+    display: block;
+    margin-top: 0.8mm;
+    color: #666;
+    font-size: 6.5pt;
+  }
+
+  .footer p {
+    margin: 0;
+    color: #777;
+    font-size: 6.4pt;
+    text-align: right;
+  }
+
+}

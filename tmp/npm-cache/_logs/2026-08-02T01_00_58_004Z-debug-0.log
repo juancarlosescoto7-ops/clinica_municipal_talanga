@@ -1,0 +1,36 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.12.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\pdf-tools\.npmrc
+5 silly config load:file:C:\Users\leyam\.npmrc
+6 silly config load:file:C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\pdf-tools\etc\npmrc
+7 verbose title npm install .\tmp\pdf-tools\pdfjs-dist-6.2.108.tgz
+8 verbose argv "install" "--offline" "--no-audit" "--no-fund" "--cache" ".\\tmp\\npm-cache" "--prefix" "tmp\\pdf-tools" ".\\tmp\\pdf-tools\\pdfjs-dist-6.2.108.tgz"
+9 verbose logfile logs-max:10 dir:C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\npm-cache\_logs\2026-08-02T01_00_58_004Z-
+10 verbose logfile C:\Users\leyam\Desktop\Proyectos\clinica-municipal\tmp\npm-cache\_logs\2026-08-02T01_00_58_004Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4496293888 maxSize:1124073472 maxEntrySize:562036736
+13 http fetch GET 200 https://registry.npmjs.org/npm 1349ms
+14 silly idealTree buildDeps
+15 silly fetch manifest pdfjs-dist@file:pdfjs-dist-6.2.108.tgz
+16 silly placeDep ROOT pdfjs-dist@6.2.108 OK for:  want: file:pdfjs-dist-6.2.108.tgz
+17 silly fetch manifest @napi-rs/canvas@^1.0.0
+18 silly packumentCache full:https://registry.npmjs.org/@napi-rs%2fcanvas cache-miss
+19 silly fetch manifest @napi-rs/canvas@^1.0.0
+20 silly packumentCache full:https://registry.npmjs.org/@napi-rs%2fcanvas cache-miss
+21 silly placeDep node_modules/pdfjs-dist @napi-rs/canvas@ OK for: pdfjs-dist@6.2.108 want: ^1.0.0
+22 silly reify moves {}
+23 http cache pdfjs-dist@file:C:/Users/leyam/Desktop/Proyectos/clinica-municipal/tmp/pdf-tools/pdfjs-dist-6.2.108.tgz 0ms (cache hit)
+24 silly ADD node_modules/pdfjs-dist
+25 verbose cwd C:\Users\leyam\Desktop\Proyectos\clinica-municipal
+26 verbose os Windows_NT 10.0.22631
+27 verbose node v24.12.0
+28 verbose npm  v11.6.2
+29 notice
+29 notice New minor version of npm available! 11.6.2 -> 11.19.0
+29 notice Changelog: https://github.com/npm/cli/releases/tag/v11.19.0
+29 notice To update run: npm install -g npm@11.19.0
+29 notice  { force: true, Symbol(proc-log.meta): true }
+30 verbose exit 0
+31 info ok

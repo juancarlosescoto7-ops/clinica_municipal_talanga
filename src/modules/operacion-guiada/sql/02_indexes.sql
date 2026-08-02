@@ -1,0 +1,2 @@
+-- SIEMC · Operación guiada
+-- No requiere índices propios porque no crea tablas.

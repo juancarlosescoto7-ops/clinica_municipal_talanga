@@ -1,0 +1,3 @@
+-- SIEMC · Operación guiada
+-- Este módulo no es dueño de tablas. Orquesta las estructuras de los módulos
+-- Pacientes, Servicios, Comisiones, Caja, Arqueos y Depósitos.
