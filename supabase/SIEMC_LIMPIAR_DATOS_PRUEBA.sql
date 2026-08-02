@@ -28,6 +28,7 @@ begin;
 set local lock_timeout = '10s';
 
 truncate table
+  public.informe_mensual_diario,
   public.informe_mensual_servicios,
   public.informe_mensual_comisiones,
   public.informe_mensual_salarios,
@@ -61,6 +62,7 @@ select
   (select count(*) from public.arqueos) as arqueos,
   (select count(*) from public.depositos) as depositos,
   (select count(*) from public.comision_liquidaciones) as liquidaciones,
+  (select count(*) from public.informe_mensual_diario) as informe_diario,
   (select count(*) from public.informes_mensuales) as informes;
 
 -- Estos valores se muestran para confirmar que la configuración se conservó.

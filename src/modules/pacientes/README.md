@@ -29,8 +29,8 @@ autenticación, permisos ni RLS.
 Campos:
 
 - Tipo y número de documento.
-- Nombres y apellidos.
-- Fecha de nacimiento.
+- Nombre completo en un único campo.
+- Fecha de nacimiento escrita como `DD/MM/AAAA`.
 - Teléfono, correo y dirección opcionales.
 - Opción de crear la atención inicial.
 - Observaciones opcionales de la atención.

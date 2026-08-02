@@ -5,6 +5,7 @@ import type {
   ValidationErrors,
   ValidationResult,
 } from "../types/pacientes.types";
+import { parsePatientBirthDate } from "../utils/patient-input";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENERAL_DOCUMENT_PATTERN = /^[A-Z0-9-]{4,30}$/;
@@ -34,11 +35,14 @@ export function normalizeDocumentNumber(value: string): string {
 export function normalizePatientValues(
   values: PatientRegistrationValues,
 ): PatientRegistrationValues {
+  const normalizedBirthDate = parsePatientBirthDate(values.birthDate);
+
   return {
     ...values,
     documentNumber: normalizeDocumentNumber(values.documentNumber),
     firstNames: values.firstNames.trim().replace(/\s+/g, " "),
     lastNames: values.lastNames.trim().replace(/\s+/g, " "),
+    birthDate: normalizedBirthDate ?? values.birthDate.trim(),
     phone: values.phone.trim(),
     email: values.email.trim().toLowerCase(),
     address: values.address.trim().replace(/\s+/g, " "),
@@ -49,6 +53,7 @@ export function validatePatientRegistration(
   rawValues: PatientRegistrationValues,
 ): ValidationResult<PatientRegistrationValues> {
   const values = normalizePatientValues(rawValues);
+  const parsedBirthDate = parsePatientBirthDate(rawValues.birthDate);
   const errors: ValidationErrors<PatientRegistrationValues> = {};
 
   if (values.documentType === "identidad") {
@@ -68,9 +73,11 @@ export function validatePatientRegistration(
     errors.lastNames = "Ingresa apellidos de entre 2 y 100 caracteres.";
   }
 
-  if (!values.birthDate) {
+  if (!rawValues.birthDate.trim()) {
     errors.birthDate = "La fecha de nacimiento es obligatoria.";
-  } else if (values.birthDate > todayAsLocalIsoDate()) {
+  } else if (!parsedBirthDate) {
+    errors.birthDate = "Escribe una fecha válida con el formato DD/MM/AAAA.";
+  } else if (parsedBirthDate > todayAsLocalIsoDate()) {
     errors.birthDate = "La fecha de nacimiento no puede estar en el futuro.";
   }
 
@@ -129,4 +136,3 @@ export function validateAbandonAttention(
 
   return resultFor(errors);
 }
-

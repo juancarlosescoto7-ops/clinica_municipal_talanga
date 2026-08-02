@@ -21,6 +21,11 @@ import {
   TARIFF_CATEGORY_LABELS,
   type TariffCategory,
 } from "@/modules/pacientes/types/pacientes.types";
+import {
+  formatPatientBirthDateInput,
+  parsePatientBirthDate,
+  splitPatientFullName,
+} from "@/modules/pacientes/utils/patient-input";
 import { getSupabaseBrowserRpcExecutor } from "@/services";
 
 import {
@@ -57,8 +62,7 @@ const FLOW_STEPS = [
 
 interface PatientFormValues {
   documentNumber: string;
-  firstNames: string;
-  lastNames: string;
+  fullName: string;
   birthDate: string;
   tariffCategory: TariffCategory;
 }
@@ -73,8 +77,7 @@ interface ClosingFormValues {
 
 const emptyPatientValues: PatientFormValues = {
   documentNumber: "",
-  firstNames: "",
-  lastNames: "",
+  fullName: "",
   birthDate: "",
   tariffCategory: "general",
 };
@@ -347,16 +350,24 @@ export function GuidedOperationsWorkspace() {
 
   async function handlePatientSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const nameParts = splitPatientFullName(patientValues.fullName);
+    const birthDate = parsePatientBirthDate(patientValues.birthDate);
 
     if (
       !patientValues.documentNumber.trim() ||
-      !patientValues.firstNames.trim() ||
-      !patientValues.lastNames.trim() ||
-      !patientValues.birthDate
+      !nameParts ||
+      nameParts.firstNames.length > 100 ||
+      nameParts.lastNames.length > 100 ||
+      !birthDate
     ) {
       setPatientError(
-        "Documento, nombres, apellidos y fecha de nacimiento son obligatorios.",
+        "Ingrese el documento, el nombre completo y una fecha válida en formato DD/MM/AAAA.",
       );
+      return;
+    }
+
+    if (birthDate > todayAsLocalIsoDate()) {
+      setPatientError("La fecha de nacimiento no puede estar en el futuro.");
       return;
     }
 
@@ -368,9 +379,9 @@ export function GuidedOperationsWorkspace() {
         patient: {
           documentType: "identidad",
           documentNumber: patientValues.documentNumber.trim(),
-          firstNames: patientValues.firstNames.trim(),
-          lastNames: patientValues.lastNames.trim(),
-          birthDate: patientValues.birthDate,
+          firstNames: nameParts.firstNames,
+          lastNames: nameParts.lastNames,
+          birthDate,
           phone: "",
           email: "",
           address: "",
@@ -390,9 +401,9 @@ export function GuidedOperationsWorkspace() {
       const patient: GuidedPatient = {
         id: registered.paciente_id,
         documentNumber: patientValues.documentNumber.trim(),
-        firstNames: patientValues.firstNames.trim(),
-        lastNames: patientValues.lastNames.trim(),
-        birthDate: patientValues.birthDate,
+        firstNames: nameParts.firstNames,
+        lastNames: nameParts.lastNames,
+        birthDate,
         tariffCategory: patientValues.tariffCategory,
       };
 
@@ -773,10 +784,17 @@ export function GuidedOperationsWorkspace() {
             <label className={styles.field}>
               <span>Fecha de nacimiento</span>
               <input
+                autoComplete="bday"
+                inputMode="numeric"
+                maxLength={10}
                 onChange={(event) =>
-                  updatePatientField("birthDate", event.target.value)
+                  updatePatientField(
+                    "birthDate",
+                    formatPatientBirthDateInput(event.target.value),
+                  )
                 }
-                type="date"
+                placeholder="DD/MM/AAAA"
+                type="text"
                 value={patientValues.birthDate}
               />
             </label>
@@ -801,21 +819,15 @@ export function GuidedOperationsWorkspace() {
               </select>
             </label>
             <label className={styles.field}>
-              <span>Nombres</span>
+              <span>Nombre completo</span>
               <input
+                autoComplete="name"
+                maxLength={201}
                 onChange={(event) =>
-                  updatePatientField("firstNames", event.target.value)
+                  updatePatientField("fullName", event.target.value)
                 }
-                value={patientValues.firstNames}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Apellidos</span>
-              <input
-                onChange={(event) =>
-                  updatePatientField("lastNames", event.target.value)
-                }
-                value={patientValues.lastNames}
+                placeholder="Nombre completo del paciente"
+                value={patientValues.fullName}
               />
             </label>
           </div>

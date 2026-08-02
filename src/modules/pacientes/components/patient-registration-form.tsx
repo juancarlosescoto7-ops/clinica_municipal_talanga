@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 import {
+  normalizePatientValues,
   validateCreateAttention,
   validatePatientRegistration,
 } from "../schemas/pacientes.schema";
@@ -12,6 +13,10 @@ import {
   type PatientRegistrationValues,
   type ValidationErrors,
 } from "../types/pacientes.types";
+import {
+  formatPatientBirthDateInput,
+  splitPatientFullName,
+} from "../utils/patient-input";
 
 import styles from "./pacientes.module.css";
 
@@ -41,6 +46,7 @@ export function PatientRegistrationForm({
 }: PatientRegistrationFormProps) {
   const [values, setValues] =
     useState<PatientRegistrationValues>(initialValues);
+  const [fullName, setFullName] = useState("");
   const [createAttention, setCreateAttention] = useState(true);
   const [attentionNotes, setAttentionNotes] = useState("");
   const [errors, setErrors] = useState<
@@ -67,7 +73,13 @@ export function PatientRegistrationForm({
     event.preventDefault();
     setSubmissionError("");
 
-    const validation = validatePatientRegistration(values);
+    const nameParts = splitPatientFullName(fullName);
+    const submissionValues: PatientRegistrationValues = {
+      ...values,
+      firstNames: nameParts?.firstNames ?? "",
+      lastNames: nameParts?.lastNames ?? "",
+    };
+    const validation = validatePatientRegistration(submissionValues);
     const attentionValidation = validateCreateAttention({
       patientId: "new-patient",
       notes: attentionNotes,
@@ -83,7 +95,11 @@ export function PatientRegistrationForm({
       return;
     }
 
-    const result = onSubmit(values, createAttention, attentionNotes);
+    const result = onSubmit(
+      normalizePatientValues(submissionValues),
+      createAttention,
+      attentionNotes,
+    );
     if (!result.success) {
       setSubmissionError(result.message);
       return;
@@ -144,38 +160,26 @@ export function PatientRegistrationForm({
             ) : null}
           </label>
 
-          <label className={styles.field}>
-            <span>Nombres</span>
+          <label className={`${styles.field} ${styles.fieldFull}`}>
+            <span>Nombre completo</span>
             <input
-              aria-invalid={Boolean(errors.firstNames)}
-              autoComplete="given-name"
-              onChange={(event) =>
-                setField("firstNames", event.target.value)
-              }
-              placeholder="Nombres del paciente"
-              value={values.firstNames}
+              aria-invalid={Boolean(errors.firstNames || errors.lastNames)}
+              autoComplete="name"
+              maxLength={201}
+              onChange={(event) => {
+                setFullName(event.target.value);
+                setErrors((currentErrors) => ({
+                  ...currentErrors,
+                  firstNames: undefined,
+                  lastNames: undefined,
+                }));
+              }}
+              placeholder="Nombre completo del paciente"
+              value={fullName}
             />
-            {errors.firstNames ? (
+            {errors.firstNames || errors.lastNames ? (
               <small className={styles.errorText}>
-                {errors.firstNames}
-              </small>
-            ) : null}
-          </label>
-
-          <label className={styles.field}>
-            <span>Apellidos</span>
-            <input
-              aria-invalid={Boolean(errors.lastNames)}
-              autoComplete="family-name"
-              onChange={(event) =>
-                setField("lastNames", event.target.value)
-              }
-              placeholder="Apellidos del paciente"
-              value={values.lastNames}
-            />
-            {errors.lastNames ? (
-              <small className={styles.errorText}>
-                {errors.lastNames}
+                Ingresa al menos un nombre y un apellido.
               </small>
             ) : null}
           </label>
@@ -184,10 +188,17 @@ export function PatientRegistrationForm({
             <span>Fecha de nacimiento</span>
             <input
               aria-invalid={Boolean(errors.birthDate)}
+              autoComplete="bday"
+              inputMode="numeric"
+              maxLength={10}
               onChange={(event) =>
-                setField("birthDate", event.target.value)
+                setField(
+                  "birthDate",
+                  formatPatientBirthDateInput(event.target.value),
+                )
               }
-              type="date"
+              placeholder="DD/MM/AAAA"
+              type="text"
               value={values.birthDate}
             />
             {errors.birthDate ? (
@@ -293,4 +304,3 @@ export function PatientRegistrationForm({
     </form>
   );
 }
-
