@@ -1,3 +1,4 @@
+import { MunicipalLogo } from "@/components/shared/municipal-logo";
 import type {
   CashRegisterState,
   ReceiptRecord,
@@ -72,10 +73,20 @@ export function CashClosingPrint({ state }: CashClosingPrintProps) {
       className={styles.printRoot}
     >
       <header className={styles.documentHeader}>
-        <div>
-          <span className={styles.organization}>SIEMC · Clínica Municipal</span>
-          <h1>Cierre de caja y arqueo diario</h1>
-          <p>Detalle consolidado de la sesión y sus movimientos.</p>
+        <div className={styles.brandBlock}>
+          <MunicipalLogo
+            alt="Escudo de la Municipalidad de Talanga"
+            className={styles.municipalLogo}
+            height={50}
+            width={48}
+          />
+          <div>
+            <span className={styles.organization}>
+              SIEMC · Clínica Municipal
+            </span>
+            <h1>Cierre de caja y arqueo diario</h1>
+            <p>Detalle consolidado de la sesión y sus movimientos.</p>
+          </div>
         </div>
         <div className={styles.documentStatus}>
           <span>Estado del arqueo</span>

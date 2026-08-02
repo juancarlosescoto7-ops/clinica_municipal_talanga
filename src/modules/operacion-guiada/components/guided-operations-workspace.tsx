@@ -8,8 +8,10 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 
+import { KeyboardHints } from "@/components/shared/keyboard-hints";
 import { CashOpeningForm } from "@/modules/caja/components/cash-opening-form";
 import { useCashSession } from "@/modules/caja/components/cash-session-provider";
 import { mapCashSessionRpcRow } from "@/modules/caja/services/caja-rpc-mappers";
@@ -137,6 +139,59 @@ function caseStatusLabel(status: GuidedCaseStatus): string {
   return "Abandono";
 }
 
+function focusAndSelect(element: HTMLElement | null) {
+  element?.focus();
+
+  if (
+    element instanceof HTMLInputElement &&
+    ["email", "number", "password", "search", "tel", "text", "url"].includes(
+      element.type,
+    )
+  ) {
+    element.select();
+  }
+}
+
+function moveFocusOnEnter(
+  event: ReactKeyboardEvent<HTMLElement>,
+  nextElement: HTMLElement | null,
+) {
+  if (
+    event.key !== "Enter" ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  focusAndSelect(nextElement);
+}
+
+function getNextServiceOptionIndex(
+  key: string,
+  index: number,
+  optionCount: number,
+): number | null {
+  const lastIndex = optionCount - 1;
+
+  if (key === "ArrowDown" || key === "ArrowRight") {
+    return index === lastIndex ? 0 : index + 1;
+  }
+
+  if (key === "ArrowUp" || key === "ArrowLeft") {
+    return index === 0 ? lastIndex : index - 1;
+  }
+
+  if (key === "Home") {
+    return 0;
+  }
+
+  return key === "End" ? lastIndex : null;
+}
+
 export function GuidedOperationsWorkspace() {
   const {
     state: cashState,
@@ -160,7 +215,7 @@ export function GuidedOperationsWorkspace() {
   const [showAbandonment, setShowAbandonment] = useState(false);
   const [abandonmentReason, setAbandonmentReason] = useState("");
   const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>("efectivo");
+    useState<PaymentMethod | null>(null);
   const [cashReceived, setCashReceived] = useState("");
   const [transferBank, setTransferBank] = useState("");
   const [transferReference, setTransferReference] = useState("");
@@ -171,6 +226,27 @@ export function GuidedOperationsWorkspace() {
   const [receiptToPrint, setReceiptToPrint] =
     useState<GuidedReceiptPrintData | null>(null);
   const lastAutoPrintedReceiptId = useRef<string | null>(null);
+  const patientDocumentRef = useRef<HTMLInputElement>(null);
+  const patientFullNameRef = useRef<HTMLInputElement>(null);
+  const patientBirthDateRef = useRef<HTMLInputElement>(null);
+  const patientTariffRef = useRef<HTMLSelectElement>(null);
+  const patientSubmitButtonRef = useRef<HTMLButtonElement>(null);
+  const serviceOptionRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const serviceConfirmButtonRef = useRef<HTMLButtonElement>(null);
+  const abandonmentReasonRef = useRef<HTMLTextAreaElement>(null);
+  const abandonmentConfirmButtonRef = useRef<HTMLButtonElement>(null);
+  const cashMethodButtonRef = useRef<HTMLButtonElement>(null);
+  const transferMethodButtonRef = useRef<HTMLButtonElement>(null);
+  const cashReceivedRef = useRef<HTMLInputElement>(null);
+  const transferBankRef = useRef<HTMLInputElement>(null);
+  const transferReferenceRef = useRef<HTMLInputElement>(null);
+  const paymentSubmitButtonRef = useRef<HTMLButtonElement>(null);
+  const closingDeclaredCashRef = useRef<HTMLInputElement>(null);
+  const closingDepositAmountRef = useRef<HTMLInputElement>(null);
+  const closingDepositBankRef = useRef<HTMLInputElement>(null);
+  const closingDepositReferenceRef = useRef<HTMLInputElement>(null);
+  const closingNotesRef = useRef<HTMLTextAreaElement>(null);
+  const closingSubmitButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!receiptToPrint) {
@@ -306,6 +382,104 @@ export function GuidedOperationsWorkspace() {
     operationStep === "closed"
       ? FLOW_STEPS.length
       : FLOW_STEPS.findIndex((item) => item.id === operationStep);
+
+  useEffect(() => {
+    function handleKeyboardShortcut(event: KeyboardEvent) {
+      if (event.defaultPrevented || event.repeat) {
+        return;
+      }
+
+      if (
+        event.key === "F2" &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey
+      ) {
+        const primaryField =
+          operationStep === "patient"
+            ? patientDocumentRef.current
+            : operationStep === "service"
+              ? showAbandonment
+                ? abandonmentReasonRef.current
+                : serviceOptionRefs.current[0]
+              : operationStep === "payment"
+                ? paymentMethod === "transferencia"
+                  ? transferMethodButtonRef.current
+                  : cashMethodButtonRef.current
+                : operationStep === "closing"
+                  ? closingDeclaredCashRef.current
+                  : null;
+
+        if (primaryField) {
+          event.preventDefault();
+          focusAndSelect(primaryField);
+        }
+        return;
+      }
+
+      if (
+        event.key === "Enter" &&
+        (event.ctrlKey || event.metaKey)
+      ) {
+        const actionButton =
+          operationStep === "patient"
+            ? patientSubmitButtonRef.current
+            : operationStep === "service"
+              ? showAbandonment
+                ? abandonmentConfirmButtonRef.current
+                : serviceConfirmButtonRef.current
+              : operationStep === "payment"
+                ? paymentSubmitButtonRef.current
+                : operationStep === "closing"
+                  ? closingSubmitButtonRef.current
+                  : null;
+
+        if (actionButton && !actionButton.disabled) {
+          event.preventDefault();
+          actionButton.click();
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyboardShortcut);
+    return () => window.removeEventListener("keydown", handleKeyboardShortcut);
+  }, [operationStep, paymentMethod, showAbandonment]);
+
+  useEffect(() => {
+    // Choosing a payment method moves focus to its data field explicitly.
+    if (
+      operationStep === "payment" &&
+      (document.activeElement === cashMethodButtonRef.current ||
+        document.activeElement === transferMethodButtonRef.current)
+    ) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const primaryField =
+        operationStep === "patient"
+          ? patientDocumentRef.current
+          : operationStep === "service"
+            ? showAbandonment
+              ? abandonmentReasonRef.current
+              : serviceOptionRefs.current[0]
+            : operationStep === "payment"
+              ? cashMethodButtonRef.current
+              : operationStep === "closing"
+                ? closingDeclaredCashRef.current
+                : null;
+
+      focusAndSelect(primaryField);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    operationStep,
+    paymentMethod,
+    serviceCatalog.length,
+    showAbandonment,
+  ]);
 
   async function handleOpen(values: CashOpeningValues) {
     try {
@@ -488,6 +662,7 @@ export function GuidedOperationsWorkspace() {
         })),
       );
       setCashReceived((selectedTotalCents / 100).toFixed(2));
+      setPaymentMethod(null);
       setPaymentError("");
       setState((current) => ({
         ...current,
@@ -510,6 +685,13 @@ export function GuidedOperationsWorkspace() {
 
     if (!state.activeAttentionId || !state.activePatient) {
       setPaymentError("No existe una atención activa en Supabase.");
+      return;
+    }
+
+    if (!paymentMethod) {
+      setPaymentError(
+        "Seleccione y confirme el método de pago antes de continuar.",
+      );
       return;
     }
 
@@ -583,7 +765,7 @@ export function GuidedOperationsWorkspace() {
       await applyRemoteDay(
         "Cobro y recibo guardados. Continúe con el siguiente paciente.",
       );
-      setPaymentMethod("efectivo");
+      setPaymentMethod(null);
       setCashReceived("");
       setTransferBank("");
       setTransferReference("");
@@ -611,7 +793,7 @@ export function GuidedOperationsWorkspace() {
       await applyRemoteDay(
         "Atención guardada como no cobrada. Continúe con el siguiente paciente.",
       );
-      setPaymentMethod("efectivo");
+      setPaymentMethod(null);
       setCashReceived("");
       setTransferBank("");
       setTransferReference("");
@@ -755,6 +937,41 @@ export function GuidedOperationsWorkspace() {
     });
   }
 
+  function confirmPaymentMethod(method: PaymentMethod) {
+    setPaymentMethod(method);
+    setPaymentError("");
+
+    window.requestAnimationFrame(() => {
+      focusAndSelect(
+        method === "efectivo"
+          ? cashReceivedRef.current
+          : transferBankRef.current,
+      );
+    });
+  }
+
+  function handlePaymentMethodKeyDown(
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+  ) {
+    if (
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight" &&
+      event.key !== "ArrowUp" &&
+      event.key !== "ArrowDown"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    setPaymentError("");
+
+    const nextButton =
+      event.currentTarget === cashMethodButtonRef.current
+        ? transferMethodButtonRef.current
+        : cashMethodButtonRef.current;
+    nextButton?.focus();
+  }
+
   function renderPatientStep() {
     return (
       <section className={styles.taskCard}>
@@ -773,12 +990,33 @@ export function GuidedOperationsWorkspace() {
             <label className={styles.field}>
               <span>Documento</span>
               <input
+                aria-keyshortcuts="F2"
                 autoFocus
                 onChange={(event) =>
                   updatePatientField("documentNumber", event.target.value)
                 }
+                onKeyDown={(event) =>
+                  moveFocusOnEnter(event, patientFullNameRef.current)
+                }
                 placeholder="Número de identidad o pasaporte"
+                ref={patientDocumentRef}
                 value={patientValues.documentNumber}
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Nombre completo</span>
+              <input
+                autoComplete="name"
+                maxLength={201}
+                onChange={(event) =>
+                  updatePatientField("fullName", event.target.value)
+                }
+                onKeyDown={(event) =>
+                  moveFocusOnEnter(event, patientBirthDateRef.current)
+                }
+                placeholder="Nombre completo del paciente"
+                ref={patientFullNameRef}
+                value={patientValues.fullName}
               />
             </label>
             <label className={styles.field}>
@@ -793,7 +1031,11 @@ export function GuidedOperationsWorkspace() {
                     formatPatientBirthDateInput(event.target.value),
                   )
                 }
+                onKeyDown={(event) =>
+                  moveFocusOnEnter(event, patientTariffRef.current)
+                }
                 placeholder="DD/MM/AAAA"
+                ref={patientBirthDateRef}
                 type="text"
                 value={patientValues.birthDate}
               />
@@ -807,6 +1049,13 @@ export function GuidedOperationsWorkspace() {
                     event.target.value as TariffCategory,
                   )
                 }
+                onKeyDown={(event) =>
+                  moveFocusOnEnter(
+                    event,
+                    patientSubmitButtonRef.current,
+                  )
+                }
+                ref={patientTariffRef}
                 value={patientValues.tariffCategory}
               >
                 {Object.entries(TARIFF_CATEGORY_LABELS).map(
@@ -818,23 +1067,20 @@ export function GuidedOperationsWorkspace() {
                 )}
               </select>
             </label>
-            <label className={styles.field}>
-              <span>Nombre completo</span>
-              <input
-                autoComplete="name"
-                maxLength={201}
-                onChange={(event) =>
-                  updatePatientField("fullName", event.target.value)
-                }
-                placeholder="Nombre completo del paciente"
-                value={patientValues.fullName}
-              />
-            </label>
           </div>
+          <KeyboardHints
+            hints={[
+              { keys: "F2", label: "primer campo" },
+              { keys: "Enter", label: "siguiente campo" },
+              { keys: "Ctrl + Enter", label: "registrar paciente" },
+            ]}
+          />
           <div className={styles.actions}>
             <button
+              aria-keyshortcuts="Control+Enter"
               className={styles.primaryButton}
               disabled={isSubmitting}
+              ref={patientSubmitButtonRef}
               type="submit"
             >
               {isSubmitting ? "Guardando…" : "Registrar y continuar"}
@@ -882,10 +1128,17 @@ export function GuidedOperationsWorkspace() {
                   setAbandonmentReason(event.target.value);
                   setServiceError("");
                 }}
+                ref={abandonmentReasonRef}
                 rows={3}
                 value={abandonmentReason}
               />
             </label>
+            <KeyboardHints
+              hints={[
+                { keys: "F2", label: "ir al motivo" },
+                { keys: "Ctrl + Enter", label: "confirmar abandono" },
+              ]}
+            />
             <div className={styles.actions}>
               <button
                 className={styles.secondaryButton}
@@ -898,6 +1151,7 @@ export function GuidedOperationsWorkspace() {
                 className={styles.dangerButton}
                 disabled={isSubmitting}
                 onClick={handleAbandonment}
+                ref={abandonmentConfirmButtonRef}
                 type="button"
               >
                 {isSubmitting ? "Guardando…" : "Confirmar abandono"}
@@ -907,7 +1161,7 @@ export function GuidedOperationsWorkspace() {
         ) : (
           <>
             <div className={styles.serviceList}>
-              {serviceCatalog.map((service) => {
+              {serviceCatalog.map((service, index) => {
                 const isSelected = state.selectedServiceIds.includes(
                   service.id,
                 );
@@ -920,8 +1174,37 @@ export function GuidedOperationsWorkspace() {
                     key={service.id}
                   >
                     <input
+                      aria-label={`Seleccionar ${service.name}`}
+                      aria-keyshortcuts="ArrowUp ArrowDown Enter"
                       checked={isSelected}
                       onChange={() => toggleService(service.id)}
+                      onKeyDown={(event) => {
+                        const nextIndex = getNextServiceOptionIndex(
+                          event.key,
+                          index,
+                          serviceCatalog.length,
+                        );
+
+                        if (nextIndex !== null) {
+                          event.preventDefault();
+                          serviceOptionRefs.current[nextIndex]?.focus();
+                          return;
+                        }
+
+                        if (
+                          event.key === "Enter" &&
+                          !event.altKey &&
+                          !event.ctrlKey &&
+                          !event.metaKey &&
+                          !event.shiftKey
+                        ) {
+                          event.preventDefault();
+                          toggleService(service.id);
+                        }
+                      }}
+                      ref={(element) => {
+                        serviceOptionRefs.current[index] = element;
+                      }}
                       type="checkbox"
                     />
                     <span>
@@ -941,6 +1224,13 @@ export function GuidedOperationsWorkspace() {
                 categoría.
               </p>
             ) : null}
+            <KeyboardHints
+              hints={[
+                { keys: "↑ / ↓", label: "navegar" },
+                { keys: "Espacio / Enter", label: "seleccionar" },
+                { keys: "Ctrl + Enter", label: "confirmar servicio" },
+              ]}
+            />
             <div className={styles.totalRow}>
               <span>Total</span>
               <strong>{formatHnl(selectedTotalCents)}</strong>
@@ -957,9 +1247,11 @@ export function GuidedOperationsWorkspace() {
                 Registrar abandono
               </button>
               <button
+                aria-keyshortcuts="Control+Enter"
                 className={styles.primaryButton}
                 disabled={isSubmitting || serviceCatalog.length === 0}
                 onClick={continueToPayment}
+                ref={serviceConfirmButtonRef}
                 type="button"
               >
                 {isSubmitting ? "Guardando…" : "Crear servicio"}
@@ -1012,21 +1304,21 @@ export function GuidedOperationsWorkspace() {
             <legend>Método de pago</legend>
             <div className={styles.methodSelector}>
               <button
+                aria-keyshortcuts="F2"
                 aria-pressed={paymentMethod === "efectivo"}
-                onClick={() => {
-                  setPaymentMethod("efectivo");
-                  setPaymentError("");
-                }}
+                onClick={() => confirmPaymentMethod("efectivo")}
+                onKeyDown={handlePaymentMethodKeyDown}
+                ref={cashMethodButtonRef}
                 type="button"
               >
                 Efectivo
               </button>
               <button
+                aria-keyshortcuts="F2"
                 aria-pressed={paymentMethod === "transferencia"}
-                onClick={() => {
-                  setPaymentMethod("transferencia");
-                  setPaymentError("");
-                }}
+                onClick={() => confirmPaymentMethod("transferencia")}
+                onKeyDown={handlePaymentMethodKeyDown}
+                ref={transferMethodButtonRef}
                 type="button"
               >
                 Transferencia
@@ -1034,7 +1326,12 @@ export function GuidedOperationsWorkspace() {
             </div>
           </fieldset>
 
-          {paymentMethod === "efectivo" ? (
+          {paymentMethod === null ? (
+            <p className={styles.methodPrompt} role="status">
+              Navegue entre los métodos y confirme uno con Enter o Espacio
+              para habilitar sus campos.
+            </p>
+          ) : paymentMethod === "efectivo" ? (
             <div className={styles.formGrid}>
               <label className={styles.field}>
                 <span>Efectivo recibido</span>
@@ -1044,6 +1341,14 @@ export function GuidedOperationsWorkspace() {
                     setCashReceived(event.target.value);
                     setPaymentError("");
                   }}
+                  onFocus={(event) => event.currentTarget.select()}
+                  onKeyDown={(event) =>
+                    moveFocusOnEnter(
+                      event,
+                      paymentSubmitButtonRef.current,
+                    )
+                  }
+                  ref={cashReceivedRef}
                   value={cashReceived}
                 />
               </label>
@@ -1061,6 +1366,13 @@ export function GuidedOperationsWorkspace() {
                     setTransferBank(event.target.value);
                     setPaymentError("");
                   }}
+                  onKeyDown={(event) =>
+                    moveFocusOnEnter(
+                      event,
+                      transferReferenceRef.current,
+                    )
+                  }
+                  ref={transferBankRef}
                   value={transferBank}
                 />
               </label>
@@ -1071,11 +1383,28 @@ export function GuidedOperationsWorkspace() {
                     setTransferReference(event.target.value);
                     setPaymentError("");
                   }}
+                  onKeyDown={(event) =>
+                    moveFocusOnEnter(
+                      event,
+                      paymentSubmitButtonRef.current,
+                    )
+                  }
+                  ref={transferReferenceRef}
                   value={transferReference}
                 />
               </label>
             </div>
           )}
+
+          <KeyboardHints
+            hints={[
+              { keys: "F2", label: "método de pago" },
+              { keys: "← / →", label: "navegar métodos" },
+              { keys: "Enter / Espacio", label: "confirmar método" },
+              { keys: "Enter", label: "avanzar en campos" },
+              { keys: "Ctrl + Enter", label: "cobrar" },
+            ]}
+          />
 
           <div className={styles.actionsBetween}>
             <button
@@ -1087,8 +1416,10 @@ export function GuidedOperationsWorkspace() {
               {isSubmitting ? "Guardando…" : "No cobrado"}
             </button>
             <button
+              aria-keyshortcuts="Control+Enter"
               className={styles.primaryButton}
-              disabled={isSubmitting}
+              disabled={isSubmitting || paymentMethod === null}
+              ref={paymentSubmitButtonRef}
               type="submit"
             >
               {isSubmitting ? "Guardando…" : "Cobrar y emitir recibo"}
@@ -1171,6 +1502,7 @@ export function GuidedOperationsWorkspace() {
             <label className={styles.field}>
               <span>Efectivo contado (incluye fondo inicial)</span>
               <input
+                aria-keyshortcuts="F2"
                 inputMode="decimal"
                 onChange={(event) => {
                   setClosingValues((current) => ({
@@ -1179,6 +1511,14 @@ export function GuidedOperationsWorkspace() {
                   }));
                   setClosingError("");
                 }}
+                onFocus={(event) => event.currentTarget.select()}
+                onKeyDown={(event) =>
+                  moveFocusOnEnter(
+                    event,
+                    closingDepositAmountRef.current,
+                  )
+                }
+                ref={closingDeclaredCashRef}
                 value={closingValues.declaredCash}
               />
             </label>
@@ -1195,7 +1535,14 @@ export function GuidedOperationsWorkspace() {
                       depositAmount: event.target.value,
                     }))
                   }
+                  onKeyDown={(event) =>
+                    moveFocusOnEnter(
+                      event,
+                      closingDepositBankRef.current,
+                    )
+                  }
                   placeholder="0.00"
+                  ref={closingDepositAmountRef}
                   value={closingValues.depositAmount}
                 />
               </label>
@@ -1208,6 +1555,13 @@ export function GuidedOperationsWorkspace() {
                       depositBank: event.target.value,
                     }))
                   }
+                  onKeyDown={(event) =>
+                    moveFocusOnEnter(
+                      event,
+                      closingDepositReferenceRef.current,
+                    )
+                  }
+                  ref={closingDepositBankRef}
                   value={closingValues.depositBank}
                 />
               </label>
@@ -1220,6 +1574,10 @@ export function GuidedOperationsWorkspace() {
                       depositReference: event.target.value,
                     }))
                   }
+                  onKeyDown={(event) =>
+                    moveFocusOnEnter(event, closingNotesRef.current)
+                  }
+                  ref={closingDepositReferenceRef}
                   value={closingValues.depositReference}
                 />
               </label>
@@ -1235,13 +1593,23 @@ export function GuidedOperationsWorkspace() {
                   setClosingError("");
                 }}
                 placeholder="Obligatorias cuando existe diferencia"
+                ref={closingNotesRef}
                 rows={3}
                 value={closingValues.notes}
               />
             </label>
+            <KeyboardHints
+              hints={[
+                { keys: "F2", label: "efectivo contado" },
+                { keys: "Enter", label: "avanzar" },
+                { keys: "Ctrl + Enter", label: "confirmar cierre" },
+              ]}
+            />
             <button
+              aria-keyshortcuts="Control+Enter"
               className={styles.primaryButton}
               disabled={isSubmitting}
+              ref={closingSubmitButtonRef}
               type="submit"
             >
               {isSubmitting ? "Cerrando jornada…" : "Confirmar cierre"}

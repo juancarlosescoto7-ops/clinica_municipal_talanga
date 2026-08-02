@@ -46,6 +46,21 @@
     border-bottom: 1.5pt solid #164347;
   }
 
+  .brandBlock {
+    display: flex;
+    align-items: center;
+    gap: 3.5mm;
+    min-width: 0;
+  }
+
+  .municipalLogo {
+    width: 12mm;
+    height: 12.4mm;
+    flex: 0 0 auto;
+    object-fit: contain;
+    opacity: 0.82;
+  }
+
   .organization {
     color: #164347;
     font-size: 7.5pt;

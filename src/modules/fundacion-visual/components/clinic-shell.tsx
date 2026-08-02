@@ -1,6 +1,6 @@
-import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { MunicipalLogo } from "@/components/shared/municipal-logo";
 import { SessionControl } from "@/modules/autenticacion/components/session-control";
 
 import type {
@@ -33,14 +33,11 @@ export function ClinicShell({
       <aside className="sidebar">
         <div className="brand" aria-label="SIEMC, Clínica Municipal de Talanga">
           <span className="brand__logo-frame" aria-hidden="true">
-            <Image
+            <MunicipalLogo
               className="brand__logo"
-              src="/brand/logo-municipalidad.svg"
               alt=""
               width={42}
               height={44}
-              priority
-              unoptimized
             />
           </span>
           <span>

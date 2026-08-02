@@ -160,6 +160,7 @@
   width: 58px;
   height: 60px;
   object-fit: contain;
+  opacity: 0.82;
 }
 
 .letterhead > div {

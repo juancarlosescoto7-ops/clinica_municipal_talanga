@@ -1,3 +1,4 @@
+import { MunicipalLogo } from "@/components/shared/municipal-logo";
 import type { CashSessionRecord } from "@/modules/caja/types/caja.types";
 import {
   formatDateTime,
@@ -85,12 +86,20 @@ export function GuidedClosingPrint({
       className={styles.printRoot}
     >
       <header className={styles.documentHeader}>
-        <div>
-          <span className={styles.organization}>
-            SIEMC · Clínica Municipal
-          </span>
-          <h1>Cierre de caja y arqueo diario</h1>
-          <p>Detalle consolidado de la jornada registrada en Supabase.</p>
+        <div className={styles.brandBlock}>
+          <MunicipalLogo
+            alt="Escudo de la Municipalidad de Talanga"
+            className={styles.municipalLogo}
+            height={50}
+            width={48}
+          />
+          <div>
+            <span className={styles.organization}>
+              SIEMC · Clínica Municipal
+            </span>
+            <h1>Cierre de caja y arqueo diario</h1>
+            <p>Detalle consolidado de la jornada registrada en Supabase.</p>
+          </div>
         </div>
         <div className={styles.documentStatus}>
           <span>Estado del arqueo</span>

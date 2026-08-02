@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
+
+import { KeyboardHints } from "@/components/shared/keyboard-hints";
 
 import { validateCashOpening } from "../schemas/caja.schema";
 import type {
@@ -18,7 +26,15 @@ interface CashOpeningFormProps {
     | Promise<{ success: boolean; message: string }>;
 }
 
+function focusAndSelect(input: HTMLInputElement | null) {
+  input?.focus();
+  input?.select();
+}
+
 export function CashOpeningForm({ onSubmit }: CashOpeningFormProps) {
+  const openingAmountRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
   const [values, setValues] = useState<CashOpeningValues>({
     openingAmount: "0.00",
     notes: "",
@@ -28,6 +44,53 @@ export function CashOpeningForm({ onSubmit }: CashOpeningFormProps) {
   >({});
   const [submissionError, setSubmissionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    function handleKeyboardShortcut(event: KeyboardEvent) {
+      if (event.defaultPrevented || event.repeat) {
+        return;
+      }
+
+      if (
+        event.key === "F2" &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        focusAndSelect(openingAmountRef.current);
+        return;
+      }
+
+      if (
+        event.key === "Enter" &&
+        (event.ctrlKey || event.metaKey) &&
+        !isSubmitting
+      ) {
+        event.preventDefault();
+        submitButtonRef.current?.click();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyboardShortcut);
+    return () => window.removeEventListener("keydown", handleKeyboardShortcut);
+  }, [isSubmitting]);
+
+  function focusNotesOnEnter(
+    event: ReactKeyboardEvent<HTMLInputElement>,
+  ) {
+    if (
+      event.key === "Enter" &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      notesRef.current?.focus();
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,8 +128,11 @@ export function CashOpeningForm({ onSubmit }: CashOpeningFormProps) {
           <span>L</span>
           <input
             aria-invalid={Boolean(errors.openingAmount)}
+            aria-keyshortcuts="F2"
             autoFocus
             inputMode="decimal"
+            onFocus={(event) => event.currentTarget.select()}
+            onKeyDown={focusNotesOnEnter}
             onChange={(event) => {
               setValues((current) => ({
                 ...current,
@@ -78,6 +144,7 @@ export function CashOpeningForm({ onSubmit }: CashOpeningFormProps) {
               }));
             }}
             placeholder="0.00"
+            ref={openingAmountRef}
             value={values.openingAmount}
           />
         </div>
@@ -105,6 +172,7 @@ export function CashOpeningForm({ onSubmit }: CashOpeningFormProps) {
             }));
           }}
           placeholder="Condición inicial o comentario de apertura"
+          ref={notesRef}
           rows={3}
           value={values.notes}
         />
@@ -123,9 +191,19 @@ export function CashOpeningForm({ onSubmit }: CashOpeningFormProps) {
         </p>
       </div>
 
+      <KeyboardHints
+        hints={[
+          { keys: "F2", label: "ir al fondo inicial" },
+          { keys: "Enter", label: "avanzar" },
+          { keys: "Ctrl + Enter", label: "abrir caja" },
+        ]}
+      />
+
       <button
+        aria-keyshortcuts="Control+Enter"
         className={styles.primaryButton}
         disabled={isSubmitting}
+        ref={submitButtonRef}
         type="submit"
       >
         {isSubmitting ? "Abriendo caja…" : "Abrir caja principal"}

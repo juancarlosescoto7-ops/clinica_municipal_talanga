@@ -1,3 +1,4 @@
+import { MunicipalLogo } from "@/components/shared/municipal-logo";
 import type { PaymentMethod } from "@/modules/caja/types/caja.types";
 import {
   formatDateTime,
@@ -69,10 +70,18 @@ function ReceiptCopy({ copyLabel, receipt }: ReceiptCopyProps) {
   return (
     <section className={styles.copy}>
       <header className={styles.header}>
-        <div>
-          <span className={styles.organization}>Clínica Municipal</span>
-          <h1>Recibo de pago</h1>
-          <small>SIEMC · Comprobante válido</small>
+        <div className={styles.brandBlock}>
+          <MunicipalLogo
+            alt="Escudo de la Municipalidad de Talanga"
+            className={styles.municipalLogo}
+            height={46}
+            width={44}
+          />
+          <div>
+            <span className={styles.organization}>Clínica Municipal</span>
+            <h1>Recibo de pago</h1>
+            <small>SIEMC · Comprobante válido</small>
+          </div>
         </div>
         <div className={styles.receiptIdentity}>
           <span>{copyLabel}</span>

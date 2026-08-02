@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { MunicipalLogo } from "@/components/shared/municipal-logo";
 import { getSupabaseBrowserRpcExecutor } from "@/services";
 
 import { mapPersistedMonthlyReport } from "../services/reportes-rpc-mappers";
@@ -114,14 +114,11 @@ function formatShortDate(value: string): string {
 function MunicipalLetterhead() {
   return (
     <header className={styles.letterhead}>
-      <Image
+      <MunicipalLogo
         className={styles.municipalLogo}
-        src="/brand/logo-municipalidad.svg"
         alt="Escudo de la Municipalidad de Talanga"
         width={58}
         height={60}
-        priority
-        unoptimized
       />
       <div>
         <strong>Municipalidad de Talanga</strong>

@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { type FormEvent, useState } from "react";
 
+import { MunicipalLogo } from "@/components/shared/municipal-logo";
 import { ThemeToggle } from "@/modules/fundacion-visual/components/theme-toggle";
 
 import { useAuthentication } from "./authentication-provider";
@@ -41,13 +41,10 @@ export function LoginScreen() {
 
       <section className={styles.loginCard} aria-labelledby="login-title">
         <div className={styles.loginBrand}>
-          <Image
-            src="/brand/logo-municipalidad.svg"
+          <MunicipalLogo
             alt="Escudo de la Municipalidad de Talanga"
             width={86}
             height={90}
-            priority
-            unoptimized
           />
           <div>
             <strong>Municipalidad de Talanga</strong>

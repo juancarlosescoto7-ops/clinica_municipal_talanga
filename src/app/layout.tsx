@@ -32,10 +32,6 @@ export const metadata: Metadata = {
   },
   description:
     "Sistema de control operativo y financiero de la Clínica Municipal.",
-  icons: {
-    icon: "/brand/logo-municipalidad.svg",
-    shortcut: "/brand/logo-municipalidad.svg",
-  },
 };
 
 interface RootLayoutProps {
@@ -46,6 +42,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <link
+          href="/brand/logo-municipalidad.svg"
+          rel="icon"
+          type="image/svg+xml"
+        />
         <script dangerouslySetInnerHTML={{ __html: themeInitializer }} />
       </head>
       <body>

@@ -247,6 +247,16 @@
   background: var(--canvas);
 }
 
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.dangerButton:focus-visible,
+.dangerTextButton:focus-visible,
+.closeButton:focus-visible,
+.methodSelector button:focus-visible {
+  outline: 3px solid rgba(var(--accent-overlay-rgb), 0.2);
+  outline-offset: 2px;
+}
+
 .dangerButton {
   border: 1px solid #a85e45;
   color: var(--white);
@@ -312,6 +322,11 @@
 .serviceOptionSelected {
   border-color: rgba(var(--accent-overlay-rgb), 0.35);
   background: var(--green-50);
+}
+
+.serviceOption:focus-within {
+  border-color: var(--green-text-700);
+  box-shadow: 0 0 0 3px rgba(var(--accent-overlay-rgb), 0.12);
 }
 
 .serviceOption input {
@@ -401,6 +416,17 @@
   border-color: var(--green-text-900);
   color: var(--green-text-900);
   background: var(--green-50);
+}
+
+.methodPrompt {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 5px;
+  color: var(--ink-500);
+  background: var(--canvas);
+  font-size: 0.68rem;
+  text-align: center;
 }
 
 .readOnlyField {
