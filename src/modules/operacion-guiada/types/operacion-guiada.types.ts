@@ -12,7 +12,11 @@ export type GuidedOperationStep =
   | "closing"
   | "closed";
 
-export type GuidedCaseStatus = "pagada" | "no_cobrada" | "abandonada";
+export type GuidedCaseStatus =
+  | "pagada"
+  | "no_cobrada"
+  | "abandonada"
+  | "anulada";
 
 export interface GuidedPatient {
   id: string;
@@ -38,6 +42,7 @@ export interface GuidedServiceDefinition {
 export interface GuidedCase {
   id: string;
   attentionNumber: string;
+  receiptId: string | null;
   receiptNumber: string | null;
   patient: GuidedPatient;
   services: readonly GuidedServiceDefinition[];
@@ -47,6 +52,8 @@ export interface GuidedCase {
   paymentBank: string | null;
   paymentReference: string | null;
   abandonmentReason: string | null;
+  annulmentReason: string | null;
+  annulledAt: string | null;
   createdAt: string;
 }
 
@@ -72,6 +79,18 @@ export interface GuidedRegisterPatientValues {
   patient: PatientRegistrationValues;
   attentionNotes: string;
   tariffCategory: TariffCategory;
+}
+
+export interface GuidedRegisteredPatientRpcRow {
+  paciente_id: string;
+  atencion_id: string;
+  numero_atencion: string | number;
+  estado: "registrada" | "pendiente_pago";
+  tipo_documento: PatientRegistrationValues["documentType"];
+  numero_documento: string;
+  nombres: string;
+  apellidos: string;
+  fecha_nacimiento: string;
 }
 
 export interface GuidedAssignServiceValues {
@@ -145,7 +164,8 @@ export interface GuidedDayAttentionRpcRow {
     | "pendiente_pago"
     | "pagada"
     | "no_cobrada"
-    | "abandonada";
+    | "abandonada"
+    | "anulada";
   categoria_tarifaria: TariffCategory;
   creada_en: string;
   motivo_abandono?: string | null;
@@ -153,6 +173,9 @@ export interface GuidedDayAttentionRpcRow {
     id: string;
     numero_documento: string;
     nombre_completo: string;
+    nombres?: string;
+    apellidos?: string;
+    fecha_nacimiento?: string;
   };
   servicios: readonly {
     atencion_servicio_id: string;
@@ -169,9 +192,13 @@ export interface GuidedDayAttentionRpcRow {
     recibo_id: string;
     numero_recibo: string | number;
     total: string | number;
+    estado: "valido" | "anulado";
     metodo: PaymentMethod;
     banco: string | null;
     referencia: string | null;
+    emitido_en: string;
+    anulado_en: string | null;
+    motivo_anulacion: string | null;
   } | null;
 }
 
@@ -202,6 +229,7 @@ export interface GuidedDayRpcState {
     pagadas: number;
     no_cobradas: number;
     abandonadas: number;
+    anuladas: number;
     total_cobrado: number;
     efectivo: number;
     transferencias: number;

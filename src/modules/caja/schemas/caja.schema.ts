@@ -127,6 +127,11 @@ export function validateReceiptAnnulment(
       "La justificación debe contener entre 10 y 300 caracteres.";
   }
 
+  if (values.adminKey.length < 12 || values.adminKey.length > 128) {
+    errors.adminKey =
+      "La clave administrativa debe contener entre 12 y 128 caracteres.";
+  }
+
   return resultFor(errors);
 }
 

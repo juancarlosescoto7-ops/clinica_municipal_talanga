@@ -40,14 +40,17 @@ Operación guiada orquesta todos los módulos operativos.
 ## Flujo transaccional
 
 1. `abrir_caja`.
-2. `registrar_paciente_atencion`.
+2. `registrar_paciente_guiado`, que crea la ficha o reutiliza el paciente
+   existente y siempre genera una atención nueva.
 3. `registrar_servicio_guiado`, que asigna tarifa y proveedor/comisión.
 4. `registrar_pago_atencion`, `registrar_no_cobrado_atencion` o
    `registrar_abandono_atencion`.
 5. Se repite desde el paciente.
-6. `cerrar_jornada_guiada` cierra Caja, genera y confirma Arqueo y registra el
+6. Antes del cierre, `anular_recibo` puede dejar sin efecto un procedimiento
+   pagado sin eliminar el paciente ni la evidencia financiera.
+7. `cerrar_jornada_guiada` cierra Caja, genera y confirma Arqueo y registra el
    Depósito opcional en la misma transacción.
-7. `generar_informe_mensual` conserva el corte de exámenes, ingresos,
+8. `generar_informe_mensual` conserva el corte de exámenes, ingresos,
    comisiones, salarios y ganancia general.
 
 ## SQL

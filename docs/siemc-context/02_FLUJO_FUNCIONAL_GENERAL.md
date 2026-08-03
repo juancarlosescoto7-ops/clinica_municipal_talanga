@@ -18,6 +18,11 @@
 8. El bucle paciente → servicio → cobro continúa hasta que la persona usuaria
    selecciona **Cerrar jornada**.
 
+Un procedimiento pagado puede anularse mientras su caja siga abierta. La
+anulación conserva el paciente, marca la atención completa como `anulada` y
+deja sin efecto financiero el recibo y su pago. El mismo paciente puede
+registrarse de nuevo para crear otra atención con la tarifa correcta.
+
 No se permite cerrar la jornada con una atención sin resolver.
 
 ## Cierre guiado

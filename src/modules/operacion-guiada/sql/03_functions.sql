@@ -1,6 +1,93 @@
 -- SIEMC · Operación guiada
 -- RPC transaccionales que avanzan el flujo de trabajo.
 
+create or replace function public.registrar_paciente_guiado(
+  p_tipo_documento text,
+  p_numero_documento text,
+  p_nombres text,
+  p_apellidos text,
+  p_fecha_nacimiento date,
+  p_telefono text default null,
+  p_correo text default null,
+  p_direccion text default null,
+  p_observaciones_atencion text default null,
+  p_categoria_tarifaria text default 'general'
+)
+returns table (
+  paciente_id uuid,
+  atencion_id uuid,
+  numero_atencion bigint,
+  estado text,
+  tipo_documento text,
+  numero_documento text,
+  nombres text,
+  apellidos text,
+  fecha_nacimiento date
+)
+language plpgsql
+as $$
+declare
+  v_tipo_documento text := lower(btrim(coalesce(p_tipo_documento, '')));
+  v_numero_documento text := upper(
+    regexp_replace(btrim(coalesce(p_numero_documento, '')), '\s+', '', 'g')
+  );
+  v_paciente public.pacientes%rowtype;
+  v_atencion record;
+begin
+  -- La ficha del paciente es permanente. Si el documento ya existe, se crea
+  -- únicamente una atención nueva con la categoría tarifaria seleccionada.
+  select p.*
+  into v_paciente
+  from public.pacientes as p
+  where p.tipo_documento = v_tipo_documento
+    and lower(p.numero_documento) = lower(v_numero_documento)
+  for update;
+
+  if found then
+    select *
+    into v_atencion
+    from public.crear_atencion_paciente(
+      v_paciente.id,
+      p_observaciones_atencion,
+      p_categoria_tarifaria
+    );
+  else
+    select *
+    into v_atencion
+    from public.registrar_paciente_atencion(
+      p_tipo_documento,
+      p_numero_documento,
+      p_nombres,
+      p_apellidos,
+      p_fecha_nacimiento,
+      p_telefono,
+      p_correo,
+      p_direccion,
+      true,
+      p_observaciones_atencion,
+      p_categoria_tarifaria
+    );
+
+    select p.*
+    into v_paciente
+    from public.pacientes as p
+    where p.id = v_atencion.paciente_id;
+  end if;
+
+  return query
+  select
+    v_paciente.id,
+    v_atencion.atencion_id,
+    v_atencion.numero_atencion,
+    v_atencion.estado,
+    v_paciente.tipo_documento,
+    v_paciente.numero_documento,
+    v_paciente.nombres,
+    v_paciente.apellidos,
+    v_paciente.fecha_nacimiento;
+end;
+$$;
+
 create or replace function public.registrar_servicio_guiado(
   p_atencion_id uuid,
   p_servicio_id uuid,
@@ -351,6 +438,7 @@ begin
         'pagadas', 0,
         'no_cobradas', 0,
         'abandonadas', 0,
+        'anuladas', 0,
         'total_cobrado', 0,
         'efectivo', 0,
         'transferencias', 0
@@ -369,18 +457,25 @@ begin
       and a.created_at <= coalesce(v_caja.cerrada_en, now())
   ),
   pagos_jornada as (
-    select
+    select distinct on (r.atencion_id)
       r.atencion_id,
       r.id as recibo_id,
       r.numero_recibo,
       r.total,
+      r.estado as recibo_estado,
+      r.emitido_en,
+      r.anulado_en,
+      r.motivo_anulacion,
       p.metodo,
       p.banco,
       p.referencia_transferencia
     from public.recibos as r
     join public.pagos as p on p.recibo_id = r.id
     where r.caja_sesion_id = v_caja.id
-      and r.estado = 'valido'
+    order by
+      r.atencion_id,
+      (r.estado = 'valido') desc,
+      r.emitido_en desc
   ),
   resumen as (
     select
@@ -388,9 +483,15 @@ begin
       count(*) filter (where aj.estado = 'pagada') as pagadas,
       count(*) filter (where aj.estado = 'no_cobrada') as no_cobradas,
       count(*) filter (where aj.estado = 'abandonada') as abandonadas,
-      coalesce(sum(pj.total), 0) as total_cobrado,
-      coalesce(sum(pj.total) filter (where pj.metodo = 'efectivo'), 0) as efectivo,
-      coalesce(sum(pj.total) filter (where pj.metodo = 'transferencia'), 0) as transferencias
+      count(*) filter (where aj.estado = 'anulada') as anuladas,
+      coalesce(sum(pj.total) filter (where pj.recibo_estado = 'valido'), 0)
+        as total_cobrado,
+      coalesce(sum(pj.total) filter (
+        where pj.recibo_estado = 'valido' and pj.metodo = 'efectivo'
+      ), 0) as efectivo,
+      coalesce(sum(pj.total) filter (
+        where pj.recibo_estado = 'valido' and pj.metodo = 'transferencia'
+      ), 0) as transferencias
     from atenciones_jornada as aj
     left join pagos_jornada as pj on pj.atencion_id = aj.id
   )
@@ -441,7 +542,10 @@ begin
           'paciente', jsonb_build_object(
             'id', p.id,
             'numero_documento', p.numero_documento,
-            'nombre_completo', p.nombres || ' ' || p.apellidos
+            'nombre_completo', p.nombres || ' ' || p.apellidos,
+            'nombres', p.nombres,
+            'apellidos', p.apellidos,
+            'fecha_nacimiento', p.fecha_nacimiento
           ),
           'servicios', coalesce((
             select jsonb_agg(
@@ -481,9 +585,13 @@ begin
               'recibo_id', pj.recibo_id,
               'numero_recibo', pj.numero_recibo,
               'total', pj.total,
+              'estado', pj.recibo_estado,
               'metodo', pj.metodo,
               'banco', pj.banco,
-              'referencia', pj.referencia_transferencia
+              'referencia', pj.referencia_transferencia,
+              'emitido_en', pj.emitido_en,
+              'anulado_en', pj.anulado_en,
+              'motivo_anulacion', pj.motivo_anulacion
             )
           end
         )

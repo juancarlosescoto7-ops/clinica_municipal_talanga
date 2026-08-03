@@ -38,11 +38,16 @@ function amount(value) {
 const env = parseEnv(await readFile(".env.local", "utf8"));
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/u, "");
 const publishableKey = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const annulmentAdminKey = process.env.SIEMC_ANNULMENT_ADMIN_KEY;
 
 assert(supabaseUrl, "Falta NEXT_PUBLIC_SUPABASE_URL en .env.local.");
 assert(
   publishableKey,
   "Falta NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY en .env.local.",
+);
+assert(
+  annulmentAdminKey,
+  "Falta SIEMC_ANNULMENT_ADMIN_KEY en el entorno temporal de la prueba.",
 );
 
 async function rpc(name, body = {}) {
@@ -84,6 +89,7 @@ let runId = now.toISOString().replace(/\D/gu, "").slice(0, 14);
 const completedSteps = [];
 let opening;
 let cashReceipt;
+let annulledReceipt;
 let transferReceipt;
 
 function mark(step) {
@@ -198,7 +204,68 @@ try {
   );
   assert(amount(cashReceipt.total) === 250, "El recibo en efectivo no totalizó L 250.");
   assert(amount(cashReceipt.cambio) === 50, "El cambio del recibo no fue L 50.");
-  mark("cobro_efectivo");
+  mark("cobro_efectivo_tarifa_incorrecta");
+
+  annulledReceipt = first(
+    await rpc("anular_recibo", {
+      p_recibo_id: cashReceipt.recibo_id,
+      p_motivo: "Tarifa general aplicada por error a paciente policía",
+      p_clave_administrativa: annulmentAdminKey,
+    }),
+    "anular_recibo",
+  );
+  assert(annulledReceipt.estado === "anulado", "El recibo no quedó anulado.");
+
+  const correctedAttention = first(
+    await rpc("registrar_paciente_guiado", {
+      p_tipo_documento: "pasaporte",
+      p_numero_documento: `QA-${runId}-01`,
+      p_nombres: "DATOS QUE NO DEBEN REEMPLAZAR",
+      p_apellidos: "AL PACIENTE EXISTENTE",
+      p_fecha_nacimiento: "1995-02-20",
+      p_telefono: null,
+      p_correo: null,
+      p_direccion: null,
+      p_observaciones_atencion: `Corrección de tarifa ${runId}`,
+      p_categoria_tarifaria: "policia",
+    }),
+    "registrar_paciente_guiado",
+  );
+  assert(
+    correctedAttention.paciente_id === cashAttention.paciente_id,
+    "El re-registro duplicó o sustituyó la ficha del paciente.",
+  );
+  assert(
+    correctedAttention.atencion_id !== cashAttention.atencion_id,
+    "El re-registro no creó una atención nueva.",
+  );
+  assert(
+    correctedAttention.nombres === "COBRO EFECTIVO",
+    "El re-registro modificó los datos del paciente existente.",
+  );
+  const correctedAssignment = await assignService(
+    correctedAttention.atencion_id,
+    policeMedical,
+  );
+  assert(
+    amount(correctedAssignment.monto_unitario) === 100,
+    "La atención corregida no aplicó la tarifa policial de L 100.",
+  );
+  cashReceipt = first(
+    await rpc("registrar_pago_atencion", {
+      p_atencion_id: correctedAttention.atencion_id,
+      p_metodo: "efectivo",
+      p_monto_recibido: 150,
+      p_banco: null,
+      p_referencia_transferencia: null,
+      p_fecha_transferencia: null,
+      p_observaciones: `Cobro corregido ${runId}`,
+    }),
+    "registrar_pago_atencion",
+  );
+  assert(amount(cashReceipt.total) === 100, "El recibo corregido no totalizó L 100.");
+  assert(amount(cashReceipt.cambio) === 50, "El cambio corregido no fue L 50.");
+  mark("anulacion_y_reregistro_paciente");
 
   const transferAttention = await registerAttention(
     "02",
@@ -272,11 +339,12 @@ try {
       "El proyecto contiene una jornada que no pertenece a esta prueba.",
     );
     runId = previousRun[1];
-    assert(initialDay.atenciones.length === 4, "La jornada reanudada no tiene cuatro atenciones.");
+    assert(initialDay.atenciones.length === 5, "La jornada reanudada no tiene cinco atenciones.");
     assert(initialDay.resumen.pagadas === 2, "La jornada reanudada no tiene dos pagos.");
     assert(initialDay.resumen.no_cobradas === 1, "La jornada reanudada no tiene un no cobrado.");
     assert(initialDay.resumen.abandonadas === 1, "La jornada reanudada no tiene un abandono.");
-    assert(amount(initialDay.resumen.efectivo) === 250, "El efectivo previo no es L 250.");
+    assert(initialDay.resumen.anuladas === 1, "La jornada reanudada no tiene una anulación.");
+    assert(amount(initialDay.resumen.efectivo) === 100, "El efectivo previo no es L 100.");
     assert(
       amount(initialDay.resumen.transferencias) === 100,
       "La transferencia previa no es L 100.",
@@ -299,11 +367,11 @@ try {
 
   const closing = first(
     await rpc("cerrar_jornada_guiada", {
-      p_efectivo_declarado: 750,
+      p_efectivo_declarado: 600,
       p_deposito: {
         fecha_deposito: today,
-        monto_depositado: 250,
-        monto_aplicado: 250,
+        monto_depositado: 100,
+        monto_aplicado: 100,
         banco: "BANCO PRUEBA SIEMC",
         referencia: `DEP-${runId}`,
         evidencia_url: null,
@@ -326,21 +394,30 @@ try {
   assert(finalDay.resumen.pagadas === 2, "La jornada no contiene dos casos pagados.");
   assert(finalDay.resumen.no_cobradas === 1, "La jornada no contiene un no cobrado.");
   assert(finalDay.resumen.abandonadas === 1, "La jornada no contiene un abandono.");
-  assert(amount(finalDay.resumen.efectivo) === 250, "El efectivo diario no es L 250.");
+  assert(finalDay.resumen.anuladas === 1, "La jornada no contiene una anulación.");
+  assert(amount(finalDay.resumen.efectivo) === 100, "El efectivo diario no es L 100.");
   assert(
     amount(finalDay.resumen.transferencias) === 100,
     "Las transferencias diarias no son L 100.",
   );
-  assert(amount(finalDay.resumen.total_cobrado) === 350, "El total diario no es L 350.");
-  assert(amount(finalDay.caja.efectivo_esperado) === 750, "El efectivo esperado no es L 750.");
-  assert(amount(finalDay.caja.efectivo_declarado) === 750, "El efectivo declarado no es L 750.");
+  assert(amount(finalDay.resumen.total_cobrado) === 200, "El total diario no es L 200.");
+  assert(amount(finalDay.caja.efectivo_esperado) === 600, "El efectivo esperado no es L 600.");
+  assert(amount(finalDay.caja.efectivo_declarado) === 600, "El efectivo declarado no es L 600.");
   assert(amount(finalDay.caja.diferencia) === 0, "La diferencia releída no es cero.");
-  assert(amount(finalDay.deposito.monto_depositado) === 250, "El depósito no se recuperó.");
+  assert(amount(finalDay.deposito.monto_depositado) === 100, "El depósito no se recuperó.");
   assert(
     finalDay.caja.observaciones_cierre.includes(runId),
     "No se recuperaron las observaciones del cierre.",
   );
-  assert(finalDay.atenciones.length === 4, "La jornada no contiene cuatro atenciones.");
+  assert(finalDay.atenciones.length === 5, "La jornada no contiene cinco atenciones.");
+  const annulledCase = finalDay.atenciones.find(
+    (item) => item.estado === "anulada",
+  );
+  assert(annulledCase?.pago?.estado === "anulado", "No se recuperó el pago anulado.");
+  assert(
+    annulledCase?.pago?.motivo_anulacion,
+    "No se recuperó la justificación de la anulación.",
+  );
   mark("relectura_persistente");
 
   const serviceCode = `QA-${runId.slice(-12)}`;
@@ -404,7 +481,7 @@ try {
     await rpc("generar_informe_mensual", { p_periodo: period }),
     "generar_informe_mensual",
   );
-  assert(amount(generatedReport.ingresos_brutos) === 350, "El informe no totalizó L 350.");
+  assert(amount(generatedReport.ingresos_brutos) === 200, "El informe no totalizó L 200.");
   assert(amount(generatedReport.total_comisiones) === 130, "Las comisiones no totalizaron L 130.");
   assert(amount(generatedReport.total_salarios) === 18000, "Los salarios no totalizaron L 18,000.");
   const persistedReport = first(
@@ -432,15 +509,15 @@ try {
         cashSessionId: opening.caja_sesion_id,
         receipts: [cashReceipt.numero_recibo, transferReceipt.numero_recibo],
         totals: {
-          cash: 250,
+          cash: 100,
           transfers: 100,
-          collected: 350,
-          expectedCash: 750,
-          declaredCash: 750,
+          collected: 200,
+          expectedCash: 600,
+          declaredCash: 600,
           difference: 0,
-          deposit: 250,
+          deposit: 100,
         },
-        cases: { paid: 2, unpaid: 1, abandoned: 1 },
+        cases: { paid: 2, unpaid: 1, abandoned: 1, annulled: 1 },
         serviceTest: { code: serviceCode, status: "inactivo", rates: 3 },
         report: {
           period,

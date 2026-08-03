@@ -32,7 +32,7 @@ function statusLabel(item: GuidedCase): string {
     return "No cobrada";
   }
 
-  return "Abandonada";
+  return item.status === "abandonada" ? "Abandonada" : "Anulada";
 }
 
 function paymentDetail(item: GuidedCase): string {
@@ -71,6 +71,9 @@ export function GuidedClosingPrint({
   );
   const abandonedCases = orderedCases.filter(
     (item) => item.status === "abandonada",
+  );
+  const annulledCases = orderedCases.filter(
+    (item) => item.status === "anulada",
   );
   const totalCollectedCents = getPaidTotalCents(cases);
   const cashCollectedCents = getPaidTotalByMethodCents(cases, "efectivo");
@@ -195,6 +198,11 @@ export function GuidedClosingPrint({
               <td className={styles.numeric}>{abandonedCases.length}</td>
               <td className={styles.numeric}>{formatHnl(0)}</td>
             </tr>
+            <tr>
+              <td>Anuladas</td>
+              <td className={styles.numeric}>{annulledCases.length}</td>
+              <td className={styles.numeric}>{formatHnl(0)}</td>
+            </tr>
           </tbody>
           <tfoot>
             <tr>
@@ -259,6 +267,9 @@ export function GuidedClosingPrint({
                     <small>{paymentDetail(item)}</small>
                     {item.abandonmentReason ? (
                       <small>Motivo: {item.abandonmentReason}</small>
+                    ) : null}
+                    {item.annulmentReason ? (
+                      <small>Motivo: {item.annulmentReason}</small>
                     ) : null}
                   </td>
                   <td className={styles.numeric}>

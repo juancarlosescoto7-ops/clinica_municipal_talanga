@@ -292,11 +292,7 @@ export function annulReceiptInSession(
   return {
     state: {
       ...state,
-      attentions: state.attentions.map((item) =>
-        item.id === attention.id
-          ? { ...item, status: "pendiente_pago" }
-          : item,
-      ),
+      attentions: state.attentions.filter((item) => item.id !== attention.id),
       receipts: state.receipts.map((item) =>
         item.id === receipt.id
           ? {
@@ -309,7 +305,7 @@ export function annulReceiptInSession(
       ),
     },
     success: true,
-    message: "Recibo anulado en la sesión actual.",
+    message: "Procedimiento, recibo y pago anulados en la sesión actual.",
     receiptId: receipt.id,
   };
 }

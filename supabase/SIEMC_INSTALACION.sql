@@ -6,6 +6,7 @@
 -- Los archivos fuente viven en src/modules/<modulo>/sql/.
 
 create extension if not exists pgcrypto;
+create extension if not exists supabase_vault with schema vault;
 
 begin;
 
@@ -2186,7 +2187,8 @@ create unique index if not exists caja_conteo_detalles_denominacion_uq
 -- ============================================================================
 
 -- SIEMC · Fase 3 · Caja y pagos
--- Funciones invocadoras. No se crean permisos, roles ni políticas RLS.
+-- Funciones de caja. La anulación usa SECURITY DEFINER exclusivamente para
+-- verificar un secreto cifrado de Supabase Vault con search_path vacío.
 
 drop trigger if exists caja_sesiones_actualizar_updated_at on public.caja_sesiones;
 
@@ -2201,6 +2203,39 @@ create trigger recibos_actualizar_updated_at
 before update on public.recibos
 for each row
 execute function public.siemc_actualizar_updated_at();
+
+create or replace function public.siemc_proteger_anulacion_administrativa()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if pg_catalog.current_setting('siemc.anulacion_autorizada', true)
+    is distinct from 'true' then
+    raise exception using
+      errcode = 'P0001',
+      message = 'ANULACION_REQUIERE_CLAVE_ADMINISTRATIVA';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists recibos_proteger_anulacion_administrativa on public.recibos;
+
+create trigger recibos_proteger_anulacion_administrativa
+before update of estado on public.recibos
+for each row
+when (old.estado is distinct from new.estado and new.estado = 'anulado')
+execute function public.siemc_proteger_anulacion_administrativa();
+
+drop trigger if exists atenciones_proteger_anulacion_administrativa on public.atenciones;
+
+create trigger atenciones_proteger_anulacion_administrativa
+before update of estado on public.atenciones
+for each row
+when (old.estado is distinct from new.estado and new.estado = 'anulada')
+execute function public.siemc_proteger_anulacion_administrativa();
 
 create or replace function public.abrir_caja(
   p_monto_inicial numeric,
@@ -2581,9 +2616,14 @@ begin
 end;
 $$;
 
+-- Eliminar la firma histórica sin clave para impedir que pueda invocarse como
+-- una ruta alternativa sin autorización administrativa.
+drop function if exists public.anular_recibo(uuid, text);
+
 create or replace function public.anular_recibo(
   p_recibo_id uuid,
-  p_motivo text
+  p_motivo text,
+  p_clave_administrativa text
 )
 returns table (
   recibo_id uuid,
@@ -2603,14 +2643,48 @@ returns table (
   motivo_anulacion text
 )
 language plpgsql
+security definer
+set search_path = ''
 as $$
 declare
   v_motivo text := regexp_replace(btrim(coalesce(p_motivo, '')), '\s+', ' ', 'g');
+  v_clave_configurada text;
   v_recibo public.recibos%rowtype;
   v_pago public.pagos%rowtype;
   v_estado_caja text;
   v_estado_atencion text;
 begin
+  if char_length(coalesce(p_clave_administrativa, '')) not between 12 and 128 then
+    raise exception using
+      errcode = 'P0001',
+      message = 'CLAVE_ANULACION_INVALIDA';
+  end if;
+
+  select secreto.decrypted_secret
+  into v_clave_configurada
+  from vault.decrypted_secrets as secreto
+  where secreto.name = 'siemc_clave_anulacion'
+  order by secreto.updated_at desc
+  limit 1;
+
+  if v_clave_configurada is null then
+    raise exception using
+      errcode = 'P0001',
+      message = 'CLAVE_ANULACION_NO_CONFIGURADA';
+  end if;
+
+  if p_clave_administrativa <> v_clave_configurada then
+    raise exception using
+      errcode = 'P0001',
+      message = 'CLAVE_ANULACION_INVALIDA';
+  end if;
+
+  perform pg_catalog.set_config(
+    'siemc.anulacion_autorizada',
+    'true',
+    true
+  );
+
   if char_length(v_motivo) not between 10 and 300 then
     raise exception using
       errcode = 'P0001',
@@ -2673,7 +2747,7 @@ begin
   returning * into v_recibo;
 
   update public.atenciones
-  set estado = 'pendiente_pago'
+  set estado = 'anulada'
   where id = v_recibo.atencion_id;
 
   insert into public.atencion_eventos (
@@ -2685,13 +2759,14 @@ begin
   )
   values (
     v_recibo.atencion_id,
-    'recibo_anulado',
+    'procedimiento_anulado',
     'pagada',
-    'pendiente_pago',
+    'anulada',
     jsonb_build_object(
       'recibo_id', v_recibo.id,
       'numero_recibo', v_recibo.numero_recibo,
-      'motivo', v_motivo
+      'motivo', v_motivo,
+      'operador_id', auth.uid()
     )
   );
 
@@ -4669,6 +4744,93 @@ $$;
 -- SIEMC · Operación guiada
 -- RPC transaccionales que avanzan el flujo de trabajo.
 
+create or replace function public.registrar_paciente_guiado(
+  p_tipo_documento text,
+  p_numero_documento text,
+  p_nombres text,
+  p_apellidos text,
+  p_fecha_nacimiento date,
+  p_telefono text default null,
+  p_correo text default null,
+  p_direccion text default null,
+  p_observaciones_atencion text default null,
+  p_categoria_tarifaria text default 'general'
+)
+returns table (
+  paciente_id uuid,
+  atencion_id uuid,
+  numero_atencion bigint,
+  estado text,
+  tipo_documento text,
+  numero_documento text,
+  nombres text,
+  apellidos text,
+  fecha_nacimiento date
+)
+language plpgsql
+as $$
+declare
+  v_tipo_documento text := lower(btrim(coalesce(p_tipo_documento, '')));
+  v_numero_documento text := upper(
+    regexp_replace(btrim(coalesce(p_numero_documento, '')), '\s+', '', 'g')
+  );
+  v_paciente public.pacientes%rowtype;
+  v_atencion record;
+begin
+  -- La ficha del paciente es permanente. Si el documento ya existe, se crea
+  -- únicamente una atención nueva con la categoría tarifaria seleccionada.
+  select p.*
+  into v_paciente
+  from public.pacientes as p
+  where p.tipo_documento = v_tipo_documento
+    and lower(p.numero_documento) = lower(v_numero_documento)
+  for update;
+
+  if found then
+    select *
+    into v_atencion
+    from public.crear_atencion_paciente(
+      v_paciente.id,
+      p_observaciones_atencion,
+      p_categoria_tarifaria
+    );
+  else
+    select *
+    into v_atencion
+    from public.registrar_paciente_atencion(
+      p_tipo_documento,
+      p_numero_documento,
+      p_nombres,
+      p_apellidos,
+      p_fecha_nacimiento,
+      p_telefono,
+      p_correo,
+      p_direccion,
+      true,
+      p_observaciones_atencion,
+      p_categoria_tarifaria
+    );
+
+    select p.*
+    into v_paciente
+    from public.pacientes as p
+    where p.id = v_atencion.paciente_id;
+  end if;
+
+  return query
+  select
+    v_paciente.id,
+    v_atencion.atencion_id,
+    v_atencion.numero_atencion,
+    v_atencion.estado,
+    v_paciente.tipo_documento,
+    v_paciente.numero_documento,
+    v_paciente.nombres,
+    v_paciente.apellidos,
+    v_paciente.fecha_nacimiento;
+end;
+$$;
+
 create or replace function public.registrar_servicio_guiado(
   p_atencion_id uuid,
   p_servicio_id uuid,
@@ -5019,6 +5181,7 @@ begin
         'pagadas', 0,
         'no_cobradas', 0,
         'abandonadas', 0,
+        'anuladas', 0,
         'total_cobrado', 0,
         'efectivo', 0,
         'transferencias', 0
@@ -5037,18 +5200,25 @@ begin
       and a.created_at <= coalesce(v_caja.cerrada_en, now())
   ),
   pagos_jornada as (
-    select
+    select distinct on (r.atencion_id)
       r.atencion_id,
       r.id as recibo_id,
       r.numero_recibo,
       r.total,
+      r.estado as recibo_estado,
+      r.emitido_en,
+      r.anulado_en,
+      r.motivo_anulacion,
       p.metodo,
       p.banco,
       p.referencia_transferencia
     from public.recibos as r
     join public.pagos as p on p.recibo_id = r.id
     where r.caja_sesion_id = v_caja.id
-      and r.estado = 'valido'
+    order by
+      r.atencion_id,
+      (r.estado = 'valido') desc,
+      r.emitido_en desc
   ),
   resumen as (
     select
@@ -5056,9 +5226,15 @@ begin
       count(*) filter (where aj.estado = 'pagada') as pagadas,
       count(*) filter (where aj.estado = 'no_cobrada') as no_cobradas,
       count(*) filter (where aj.estado = 'abandonada') as abandonadas,
-      coalesce(sum(pj.total), 0) as total_cobrado,
-      coalesce(sum(pj.total) filter (where pj.metodo = 'efectivo'), 0) as efectivo,
-      coalesce(sum(pj.total) filter (where pj.metodo = 'transferencia'), 0) as transferencias
+      count(*) filter (where aj.estado = 'anulada') as anuladas,
+      coalesce(sum(pj.total) filter (where pj.recibo_estado = 'valido'), 0)
+        as total_cobrado,
+      coalesce(sum(pj.total) filter (
+        where pj.recibo_estado = 'valido' and pj.metodo = 'efectivo'
+      ), 0) as efectivo,
+      coalesce(sum(pj.total) filter (
+        where pj.recibo_estado = 'valido' and pj.metodo = 'transferencia'
+      ), 0) as transferencias
     from atenciones_jornada as aj
     left join pagos_jornada as pj on pj.atencion_id = aj.id
   )
@@ -5109,7 +5285,10 @@ begin
           'paciente', jsonb_build_object(
             'id', p.id,
             'numero_documento', p.numero_documento,
-            'nombre_completo', p.nombres || ' ' || p.apellidos
+            'nombre_completo', p.nombres || ' ' || p.apellidos,
+            'nombres', p.nombres,
+            'apellidos', p.apellidos,
+            'fecha_nacimiento', p.fecha_nacimiento
           ),
           'servicios', coalesce((
             select jsonb_agg(
@@ -5149,9 +5328,13 @@ begin
               'recibo_id', pj.recibo_id,
               'numero_recibo', pj.numero_recibo,
               'total', pj.total,
+              'estado', pj.recibo_estado,
               'metodo', pj.metodo,
               'banco', pj.banco,
-              'referencia', pj.referencia_transferencia
+              'referencia', pj.referencia_transferencia,
+              'emitido_en', pj.emitido_en,
+              'anulado_en', pj.anulado_en,
+              'motivo_anulacion', pj.motivo_anulacion
             )
           end
         )
@@ -6002,12 +6185,23 @@ revoke all privileges on all tables in schema public from public, anon;
 revoke all privileges on all sequences in schema public from public, anon;
 revoke execute on all functions in schema public from public, anon;
 
+-- Los operadores autenticados nunca pueden leer directamente los secretos.
+-- La anulación accede a su clave únicamente dentro de la RPC protegida.
+revoke usage on schema vault from public, anon, authenticated;
+revoke all privileges on all tables in schema vault
+  from public, anon, authenticated;
+
 -- La cuenta interna autenticada utiliza las RPC existentes, que son funciones
 -- invocadoras y por ello necesitan permisos sobre sus tablas y secuencias.
 grant usage on schema public to authenticated, service_role;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 grant usage, select, update on all sequences in schema public to authenticated;
 grant execute on all functions in schema public to authenticated;
+
+-- Los movimientos financieros no se actualizan ni eliminan directamente
+-- desde el Data API. La RPC protegida conserva los privilegios de su dueño.
+revoke update, delete on public.recibos from authenticated;
+revoke update, delete on public.pagos from authenticated;
 
 -- Mantener la misma política para objetos que se agreguen en futuras versiones.
 alter default privileges in schema public

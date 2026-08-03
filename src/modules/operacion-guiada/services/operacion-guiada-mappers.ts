@@ -25,12 +25,16 @@ function getServiceCategory(code: string): GuidedServiceDefinition["category"] {
 function mapPatient(
   row: GuidedDayAttentionRpcRow,
 ): GuidedPatient {
+  const firstNames = row.paciente.nombres?.trim() ?? "";
+  const lastNames = row.paciente.apellidos?.trim() ?? "";
+  const legacyFullName = row.paciente.nombre_completo?.trim() ?? "";
+
   return {
     id: row.paciente.id,
     documentNumber: row.paciente.numero_documento,
-    firstNames: row.paciente.nombre_completo,
-    lastNames: "",
-    birthDate: "",
+    firstNames: firstNames || lastNames ? firstNames : legacyFullName,
+    lastNames,
+    birthDate: row.paciente.fecha_nacimiento ?? "",
     tariffCategory: row.categoria_tarifaria,
   };
 }
@@ -92,7 +96,8 @@ function mapTerminalCase(row: GuidedDayAttentionRpcRow): GuidedCase | null {
   if (
     row.estado !== "pagada" &&
     row.estado !== "no_cobrada" &&
-    row.estado !== "abandonada"
+    row.estado !== "abandonada" &&
+    row.estado !== "anulada"
   ) {
     return null;
   }
@@ -106,6 +111,7 @@ function mapTerminalCase(row: GuidedDayAttentionRpcRow): GuidedCase | null {
   return {
     id: row.atencion_id,
     attentionNumber: String(row.numero_atencion),
+    receiptId: row.pago?.recibo_id ?? null,
     receiptNumber:
       row.pago?.numero_recibo === undefined
         ? null
@@ -118,6 +124,8 @@ function mapTerminalCase(row: GuidedDayAttentionRpcRow): GuidedCase | null {
     paymentBank: row.pago?.banco ?? null,
     paymentReference: row.pago?.referencia ?? null,
     abandonmentReason: row.motivo_abandono ?? null,
+    annulmentReason: row.pago?.motivo_anulacion ?? null,
+    annulledAt: row.pago?.anulado_en ?? null,
     createdAt: row.creada_en,
   };
 }

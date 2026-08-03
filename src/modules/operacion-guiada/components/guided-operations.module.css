@@ -164,6 +164,11 @@
   font-weight: 650;
 }
 
+.field small {
+  color: var(--ink-500);
+  font-size: 0.62rem;
+}
+
 .field input,
 .field select,
 .field textarea {
@@ -580,6 +585,78 @@
 .status_abandonada {
   color: var(--danger-text);
   background: var(--danger-surface);
+}
+
+.status_anulada {
+  color: var(--ink-650);
+  background: var(--surface-muted);
+}
+
+.tableAction {
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--danger-border);
+  border-radius: 4px;
+  color: var(--danger-text);
+  background: var(--surface-solid);
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 650;
+}
+
+.tableAction:hover {
+  background: var(--danger-surface);
+}
+
+.annulmentSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--line);
+}
+
+.annulmentSummary > div {
+  min-width: 0;
+  padding: 11px 12px;
+  background: var(--surface-solid);
+}
+
+.annulmentSummary dt,
+.annulmentSummary dd {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annulmentSummary dt {
+  color: var(--ink-500);
+  font-size: 0.61rem;
+}
+
+.annulmentSummary dd {
+  margin-top: 3px;
+  color: var(--ink-800);
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.annulmentWarning {
+  padding: 12px;
+  border: 1px solid var(--warning-border);
+  border-radius: 6px;
+  color: var(--warning-text);
+  background: var(--warning-surface);
+  font-size: 0.7rem;
+}
+
+.annulmentWarning p {
+  margin: 4px 0 0;
+  line-height: 1.5;
 }
 
 .empty {

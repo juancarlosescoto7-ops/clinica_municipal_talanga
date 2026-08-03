@@ -27,7 +27,9 @@ export function ReceiptAnnulmentForm({
   receipt,
 }: ReceiptAnnulmentFormProps) {
   const [reason, setReason] = useState("");
+  const [adminKey, setAdminKey] = useState("");
   const [reasonError, setReasonError] = useState("");
+  const [adminKeyError, setAdminKeyError] = useState("");
   const [submissionError, setSubmissionError] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -35,10 +37,12 @@ export function ReceiptAnnulmentForm({
     const values: ReceiptAnnulmentValues = {
       receiptId: receipt.id,
       reason,
+      adminKey,
     };
     const validation = validateReceiptAnnulment(values);
 
     setReasonError(validation.errors.reason ?? "");
+    setAdminKeyError(validation.errors.adminKey ?? "");
     setSubmissionError("");
 
     if (!validation.isValid) {
@@ -74,7 +78,8 @@ export function ReceiptAnnulmentForm({
       <div className={styles.warningBox}>
         <strong>El registro financiero no se eliminará</strong>
         <p>
-          El recibo quedará anulado y la atención volverá a pendiente de pago.
+          El recibo y el pago quedarán anulados, la atención se marcará como
+          anulada y la ficha del paciente se conservará.
         </p>
       </div>
 
@@ -85,10 +90,34 @@ export function ReceiptAnnulmentForm({
       ) : null}
 
       <label className={styles.field}>
+        <span>Clave administrativa</span>
+        <input
+          aria-invalid={Boolean(adminKeyError)}
+          autoComplete="off"
+          autoFocus
+          maxLength={128}
+          onChange={(event) => {
+            setAdminKey(event.target.value);
+            setAdminKeyError("");
+          }}
+          placeholder="Clave privada de anulación"
+          spellCheck={false}
+          type="password"
+          value={adminKey}
+        />
+        {adminKeyError ? (
+          <small className={styles.errorText}>{adminKeyError}</small>
+        ) : (
+          <small className={styles.helpText}>
+            Esta clave no se guarda en el navegador.
+          </small>
+        )}
+      </label>
+
+      <label className={styles.field}>
         <span>Justificación de la anulación</span>
         <textarea
           aria-invalid={Boolean(reasonError)}
-          autoFocus
           onChange={(event) => {
             setReason(event.target.value);
             setReasonError("");
@@ -114,4 +143,3 @@ export function ReceiptAnnulmentForm({
     </form>
   );
 }
-

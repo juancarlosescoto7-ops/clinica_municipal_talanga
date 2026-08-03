@@ -109,13 +109,17 @@ Catorce índices explícitos controlan:
 
 ### `anular_recibo`
 
-- Objetivo: anular sin eliminar y devolver la atención a
-  `pendiente_pago`.
-- Parámetros: recibo y motivo.
+- Objetivo: anular sin eliminar el recibo y su pago, y marcar la atención
+  completa como `anulada`. La ficha del paciente no se modifica.
+- Parámetros: recibo, motivo y clave administrativa.
 - Retorno: recibo anulado.
 - Tablas: `caja_sesiones`, `recibos`, `pagos`, `atenciones`,
   `atencion_eventos`.
-- Validaciones: recibo válido, caja abierta, atención aún pagada y motivo.
+- Validaciones: clave coincidente con `siemc_clave_anulacion` en Supabase
+  Vault, recibo válido, caja abierta, atención aún pagada y motivo.
+- Seguridad: la firma histórica sin clave se elimina. La RPC usa
+  `security definer` con `search_path` vacío exclusivamente para consultar el
+  secreto cifrado; los roles del navegador no tienen acceso directo a Vault.
 - Servicio: `createCashService().annulReceipt`.
 
 ### `cerrar_caja`
@@ -151,5 +155,5 @@ migración autorizada si cambia la circulación.
 
 ## Seguridad
 
-No se crean autenticación, roles, permisos, funciones `security definer` ni
-políticas RLS.
+Las funciones son invocadoras salvo `anular_recibo`, que requiere privilegios
+del propietario para verificar Supabase Vault. No expone ni retorna la clave.

@@ -79,13 +79,14 @@ recarga recupera la última jornada de la caja `PRINCIPAL`.
 - Cada recibo contiene un único pago por el total de la atención.
 - No se admiten pagos parciales ni combinación de métodos.
 - Un pago válido cambia la atención a `pagada`.
-- `pagada` es el estado terminal del ciclo controlado por SIEMC.
+- `pagada` cierra el cobro, salvo que el procedimiento sea anulado antes del
+  cierre de caja.
 - Solo puede existir un recibo válido por atención.
 - El pago en efectivo exige monto suficiente y conserva el cambio.
 - La transferencia exige banco, referencia y fecha válida.
 - La referencia de transferencia es única cuando está informada.
-- La anulación conserva recibo y pago, exige motivo y cambia la atención a
-  `pendiente_pago` si todavía se encuentra `pagada`.
+- La anulación conserva recibo y pago como evidencia, exige motivo y cambia la
+  atención de `pagada` a `anulada` sin modificar al paciente.
 - Solo se anulan recibos mientras su caja continúa abierta.
 - El cierre guarda el conteo y calcula la diferencia como declarado menos
   esperado.
@@ -163,8 +164,42 @@ denominaciones y conteos.
 Ocho RPC documentadas en `sql/README.md`. El registro de pago, la anulación y
 el cierre agrupan sus cambios en una sola transacción de PostgreSQL.
 
-Los eventos `pago_registrado` y `recibo_anulado` se agregan a
-`atencion_eventos` sin alterar su estructura.
+Los eventos `pago_registrado` y `procedimiento_anulado` se agregan a
+`atencion_eventos`. La anulación conserva la ficha del paciente y el respaldo
+histórico del recibo/pago, pero excluye ese movimiento de caja, arqueos,
+reportes y comisiones.
+
+## Clave administrativa de anulación
+
+La anulación exige una clave independiente de la sesión normal. El valor no se
+incluye en el frontend, el repositorio ni variables `NEXT_PUBLIC_*`.
+
+Después de aplicar `supabase/SIEMC_INSTALACION.sql`, no es necesario que el
+Dashboard muestre una sección llamada **Vault**. Abrir **SQL Editor**, reemplazar
+únicamente el valor de ejemplo y ejecutar:
+
+```sql
+select vault.create_secret(
+  'REEMPLAZAR_POR_UNA_CLAVE_PRIVADA_DE_12_O_MAS_CARACTERES',
+  'siemc_clave_anulacion',
+  'Clave administrativa para anular procedimientos en SIEMC'
+);
+```
+
+La clave debe tener entre 12 y 128 caracteres. Para comprobar que fue creada
+sin mostrar su valor:
+
+```sql
+select name, created_at, updated_at
+from vault.secrets
+where name = 'siemc_clave_anulacion';
+```
+
+Para rotarla, usar `vault.update_secret(...)` sobre el mismo registro y
+conservar el nombre `siemc_clave_anulacion`.
+
+Supabase guarda el secreto cifrado. La interfaz lo envía solamente al confirmar
+una anulación y lo descarta al cerrar el diálogo.
 
 Los servicios clínicos posteriores al pago son administrados externamente por
 los proveedores y no generan transiciones adicionales dentro de SIEMC.

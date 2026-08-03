@@ -74,6 +74,7 @@ const output = [
   "-- Los archivos fuente viven en src/modules/<modulo>/sql/.",
   "",
   "create extension if not exists pgcrypto;",
+  "create extension if not exists supabase_vault with schema vault;",
   "",
   "begin;",
   "",

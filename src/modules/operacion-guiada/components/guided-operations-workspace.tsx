@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import { KeyboardHints } from "@/components/shared/keyboard-hints";
+import { ModuleDialog } from "@/components/shared/module-dialog";
 import { CashOpeningForm } from "@/modules/caja/components/cash-opening-form";
 import { useCashSession } from "@/modules/caja/components/cash-session-provider";
 import { mapCashSessionRpcRow } from "@/modules/caja/services/caja-rpc-mappers";
@@ -42,12 +43,14 @@ import {
   getPaidTotalCents,
 } from "../utils/operacion-guiada-formatters";
 import type {
+  GuidedCase,
   GuidedCaseStatus,
   GuidedPatient,
   GuidedServiceDefinition,
 } from "../types/operacion-guiada.types";
 import { GuidedClosingPrint } from "./guided-closing-print";
 import { useGuidedOperation } from "./guided-operation-provider";
+import { ProcedureAnnulmentForm } from "./procedure-annulment-form";
 import {
   GuidedReceiptPrint,
   type GuidedReceiptPrintData,
@@ -136,7 +139,12 @@ function caseStatusLabel(status: GuidedCaseStatus): string {
     return "No cobrada";
   }
 
-  return "Abandono";
+  return status === "abandonada" ? "Abandono" : "Anulada";
+}
+
+function birthDateForInput(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
 }
 
 function focusAndSelect(element: HTMLElement | null) {
@@ -225,6 +233,8 @@ export function GuidedOperationsWorkspace() {
   const [closingError, setClosingError] = useState("");
   const [receiptToPrint, setReceiptToPrint] =
     useState<GuidedReceiptPrintData | null>(null);
+  const [procedureToAnnul, setProcedureToAnnul] =
+    useState<GuidedCase | null>(null);
   const lastAutoPrintedReceiptId = useRef<string | null>(null);
   const patientDocumentRef = useRef<HTMLInputElement>(null);
   const patientFullNameRef = useRef<HTMLInputElement>(null);
@@ -370,6 +380,11 @@ export function GuidedOperationsWorkspace() {
   const abandonedCasesCount = state.cases.filter(
     (item) => item.status === "abandonada",
   ).length;
+  const annulledCasesCount = state.cases.filter(
+    (item) => item.status === "anulada",
+  ).length;
+  const canAnnulProcedures =
+    cashState.session?.status === "abierta" && !state.activePatient;
   const operationStep =
     state.step === "opening" && cashState.session?.status === "abierta"
       ? "patient"
@@ -574,10 +589,10 @@ export function GuidedOperationsWorkspace() {
       );
       const patient: GuidedPatient = {
         id: registered.paciente_id,
-        documentNumber: patientValues.documentNumber.trim(),
-        firstNames: nameParts.firstNames,
-        lastNames: nameParts.lastNames,
-        birthDate,
+        documentNumber: registered.numero_documento,
+        firstNames: registered.nombres,
+        lastNames: registered.apellidos,
+        birthDate: registered.fecha_nacimiento,
         tariffCategory: patientValues.tariffCategory,
       };
 
@@ -585,7 +600,7 @@ export function GuidedOperationsWorkspace() {
       setState((current) => ({
         ...current,
         activeAttentionId: registered.atencion_id,
-        activeAttentionNumber: registered.numero_atencion,
+        activeAttentionNumber: String(registered.numero_atencion),
         activePatient: patient,
         selectedServiceIds: [],
         step: "service",
@@ -805,6 +820,43 @@ export function GuidedOperationsWorkspace() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleProcedureAnnulment(reason: string, adminKey: string) {
+    if (!procedureToAnnul?.receiptId) {
+      return {
+        success: false,
+        message: "El procedimiento no tiene un recibo válido para anular.",
+      };
+    }
+
+    try {
+      await service.annulProcedure(
+        procedureToAnnul.receiptId,
+        reason,
+        adminKey,
+      );
+      await applyRemoteDay(
+        "Procedimiento, recibo y pago anulados. Revise la tarifa y registre nuevamente al paciente.",
+      );
+      setPatientValues({
+        documentNumber: procedureToAnnul.patient.documentNumber,
+        fullName: patientFullName(procedureToAnnul.patient),
+        birthDate: birthDateForInput(procedureToAnnul.patient.birthDate),
+        tariffCategory: procedureToAnnul.patient.tariffCategory,
+      });
+      setPatientError("");
+      setProcedureToAnnul(null);
+      return { success: true, message: "Procedimiento anulado." };
+    } catch (cause) {
+      return {
+        success: false,
+        message:
+          cause instanceof Error
+            ? cause.message
+            : "No fue posible anular el procedimiento.",
+      };
     }
   }
 
@@ -1432,7 +1484,8 @@ export function GuidedOperationsWorkspace() {
 
   function renderClosingStep() {
     return (
-      <section className={styles.closingWorkspace}>
+      <>
+        <section className={styles.closingWorkspace}>
         <header className={styles.closingHeader}>
           <div>
             <h1>Cierre de jornada</h1>
@@ -1472,7 +1525,7 @@ export function GuidedOperationsWorkspace() {
               <h2>Atenciones de la jornada</h2>
               <span>{state.cases.length} registros</span>
             </header>
-            {renderCasesTable()}
+            {renderCasesTable(canAnnulProcedures)}
           </section>
 
           <form className={styles.taskCard} onSubmit={handleClosing}>
@@ -1616,11 +1669,32 @@ export function GuidedOperationsWorkspace() {
             </button>
           </form>
         </div>
-      </section>
+        </section>
+        {renderProcedureAnnulmentDialog()}
+      </>
     );
   }
 
-  function renderCasesTable() {
+  function renderProcedureAnnulmentDialog() {
+    if (!procedureToAnnul) {
+      return null;
+    }
+
+    return (
+      <ModuleDialog
+        onClose={() => setProcedureToAnnul(null)}
+        title="Anular procedimiento"
+      >
+        <ProcedureAnnulmentForm
+          onCancel={() => setProcedureToAnnul(null)}
+          onSubmit={handleProcedureAnnulment}
+          procedure={procedureToAnnul}
+        />
+      </ModuleDialog>
+    );
+  }
+
+  function renderCasesTable(allowAnnulment = false) {
     if (state.cases.length === 0) {
       return <p className={styles.empty}>Sin atenciones registradas.</p>;
     }
@@ -1636,6 +1710,7 @@ export function GuidedOperationsWorkspace() {
               <th>Medio</th>
               <th>Estado</th>
               <th>Total</th>
+              {allowAnnulment ? <th>Acción</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -1664,6 +1739,21 @@ export function GuidedOperationsWorkspace() {
                   </span>
                 </td>
                 <td>{formatHnl(item.totalCents)}</td>
+                {allowAnnulment ? (
+                  <td>
+                    {item.status === "pagada" && item.receiptId ? (
+                      <button
+                        className={styles.tableAction}
+                        onClick={() => setProcedureToAnnul(item)}
+                        type="button"
+                      >
+                        Anular
+                      </button>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
@@ -1802,7 +1892,7 @@ export function GuidedOperationsWorkspace() {
           <h1>Operación de la jornada</h1>
           <p>
             {paidCasesCount} cobradas · {pendingCasesCount} no cobradas ·{" "}
-            {abandonedCasesCount} abandonos
+            {abandonedCasesCount} abandonos · {annulledCasesCount} anuladas
           </p>
         </div>
         <button
@@ -1876,9 +1966,12 @@ export function GuidedOperationsWorkspace() {
               <dd>{pendingCasesCount}</dd>
             </div>
           </dl>
-          <div className={styles.compactCases}>{renderCasesTable()}</div>
+          <div className={styles.compactCases}>
+            {renderCasesTable(canAnnulProcedures)}
+          </div>
         </aside>
       </div>
+      {renderProcedureAnnulmentDialog()}
       <GuidedReceiptPrint receipt={receiptToPrint} />
     </div>
   );

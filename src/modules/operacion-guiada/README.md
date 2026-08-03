@@ -13,7 +13,8 @@ transacción, los pasos que atraviesan varios módulos.
 2. `sql/02_indexes.sql` documenta que no hay índices propios.
 3. `sql/03_functions.sql` contiene las RPC de orquestación.
 
-Las funciones principales son `registrar_servicio_guiado`,
+Las funciones principales son `registrar_paciente_guiado`,
+`registrar_servicio_guiado`,
 `registrar_no_cobrado_atencion`, `obtener_jornada_guiada` y
 `cerrar_jornada_guiada`.
 
@@ -23,13 +24,14 @@ después de cada operación terminal.
 ## Recorrido
 
 1. Abrir caja.
-2. Registrar paciente.
+2. Registrar un paciente nuevo o crear otra atención para uno existente.
 3. Seleccionar el servicio o registrar abandono.
 4. Cobrar en efectivo o transferencia, o registrar como no cobrado.
-5. Volver automáticamente al siguiente paciente.
-6. Cerrar jornada.
-7. Registrar efectivo contado y depósito bancario opcional.
-8. Consultar el informe mensual consolidado.
+5. Si hubo un error, anular el procedimiento pagado sin eliminar al paciente.
+6. Volver automáticamente al siguiente paciente.
+7. Cerrar jornada.
+8. Registrar efectivo contado y depósito bancario opcional.
+9. Consultar el informe mensual consolidado.
 
 ## Reglas de la maqueta
 
@@ -39,6 +41,9 @@ después de cada operación terminal.
 - Una transferencia requiere banco y referencia.
 - Un depósito de cierre requiere banco y referencia.
 - Pagada, no cobrada y abandonada terminan la atención y reinician el bucle.
+- La anulación deja la atención en `anulada`, conserva recibo/pago como
+  evidencia y permite registrar de nuevo la ficha existente con otra tarifa.
+- Cada anulación exige la clave administrativa guardada en Supabase Vault.
 - El estado se conserva mientras se navega dentro del layout de la clínica.
 - La pantalla está conectada a `services/operacion-guiada.service.ts` y al
   ejecutor compartido de Supabase.
@@ -61,6 +66,14 @@ después de cada operación terminal.
 3. Crear servicio.
 4. Seleccionar `No cobrado`.
 5. Confirmar el estado en la jornada.
+
+### Anulación y corrección de tarifa
+
+1. En la jornada actual, seleccionar `Anular` sobre una atención cobrada.
+2. Escribir la justificación y confirmar `Anular procedimiento`.
+3. Confirmar que el total de caja ya no incluye el pago anulado.
+4. Verificar que el formulario conserva los datos del paciente.
+5. Elegir la tarifa correcta, registrar la nueva atención y volver a cobrar.
 
 ### Abandono
 

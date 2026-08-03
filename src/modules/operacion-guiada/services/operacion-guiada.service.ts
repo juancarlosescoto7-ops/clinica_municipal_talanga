@@ -17,6 +17,7 @@ import type {
   GuidedDayRpcState,
   GuidedPaymentValues,
   GuidedRegisterPatientValues,
+  GuidedRegisteredPatientRpcRow,
   GuidedServiceCatalogRpcRow,
   GuidedServiceDefinition,
   GuidedUnpaidRpcRow,
@@ -31,7 +32,7 @@ export interface GuidedOperationService {
   openDay(openingAmount: number, notes?: string): Promise<CashSessionRpcRow>;
   registerPatient(
     values: GuidedRegisterPatientValues,
-  ): Promise<RegisteredPatientRpcRow>;
+  ): Promise<GuidedRegisteredPatientRpcRow>;
   listAvailableServices(
     referenceDate: string,
     tariffCategory?: TariffCategory,
@@ -48,6 +49,11 @@ export interface GuidedOperationService {
     reason: string,
   ): Promise<RegisteredPatientRpcRow>;
   registerPayment(values: GuidedPaymentValues): Promise<ReceiptRpcRow>;
+  annulProcedure(
+    receiptId: string,
+    reason: string,
+    adminKey: string,
+  ): Promise<ReceiptRpcRow>;
   markUnpaid(attentionId: string, reason?: string): Promise<GuidedUnpaidRpcRow>;
   getDayState(): Promise<GuidedDayRpcState>;
   closeDay(values: GuidedCloseDayValues): Promise<GuidedCloseDayRpcResult>;
@@ -63,6 +69,18 @@ export class GuidedOperationServiceError extends Error {
   }
 }
 
+function rpcErrorMessage(message: string): string {
+  if (message.includes("CLAVE_ANULACION_NO_CONFIGURADA")) {
+    return "La clave administrativa de anulación todavía no está configurada en Supabase Vault.";
+  }
+
+  if (message.includes("CLAVE_ANULACION_INVALIDA")) {
+    return "La clave administrativa no es correcta.";
+  }
+
+  return message;
+}
+
 async function executeRpc<TResult>(
   executor: RpcExecutor,
   name: string,
@@ -71,7 +89,7 @@ async function executeRpc<TResult>(
   const response = await executor.rpc<TResult>(name, parameters);
   if (response.error) {
     throw new GuidedOperationServiceError(
-      response.error.message,
+      rpcErrorMessage(response.error.message),
       response.error.code,
     );
   }
@@ -126,9 +144,9 @@ export function createGuidedOperationService(
     },
 
     async registerPatient(values) {
-      const rows = await executeRpc<RegisteredPatientRpcRow[]>(
+      const rows = await executeRpc<GuidedRegisteredPatientRpcRow[]>(
         executor,
-        "registrar_paciente_atencion",
+        "registrar_paciente_guiado",
         {
           p_tipo_documento: values.patient.documentType,
           p_numero_documento: values.patient.documentNumber,
@@ -138,7 +156,6 @@ export function createGuidedOperationService(
           p_telefono: values.patient.phone || null,
           p_correo: values.patient.email || null,
           p_direccion: values.patient.address || null,
-          p_crear_atencion: true,
           p_observaciones_atencion: values.attentionNotes || null,
           p_categoria_tarifaria: values.tariffCategory,
         },
@@ -238,6 +255,17 @@ export function createGuidedOperationService(
           },
         ),
         "La RPC no retornó el pago.",
+      );
+    },
+
+    async annulProcedure(receiptId, reason, adminKey) {
+      return firstRow(
+        await executeRpc<ReceiptRpcRow[]>(executor, "anular_recibo", {
+          p_recibo_id: receiptId,
+          p_motivo: reason,
+          p_clave_administrativa: adminKey,
+        }),
+        "La RPC no retornó el procedimiento anulado.",
       );
     },
 

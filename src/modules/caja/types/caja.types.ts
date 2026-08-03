@@ -37,6 +37,7 @@ export interface PaymentValues {
 export interface ReceiptAnnulmentValues {
   receiptId: string;
   reason: string;
+  adminKey: string;
 }
 
 export interface DenominationCountValue {

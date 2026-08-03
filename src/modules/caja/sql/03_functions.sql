@@ -1,5 +1,6 @@
 -- SIEMC · Fase 3 · Caja y pagos
--- Funciones invocadoras. No se crean permisos, roles ni políticas RLS.
+-- Funciones de caja. La anulación usa SECURITY DEFINER exclusivamente para
+-- verificar un secreto cifrado de Supabase Vault con search_path vacío.
 
 create trigger caja_sesiones_actualizar_updated_at
 before update on public.caja_sesiones
@@ -10,6 +11,35 @@ create trigger recibos_actualizar_updated_at
 before update on public.recibos
 for each row
 execute function public.siemc_actualizar_updated_at();
+
+create or replace function public.siemc_proteger_anulacion_administrativa()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if pg_catalog.current_setting('siemc.anulacion_autorizada', true)
+    is distinct from 'true' then
+    raise exception using
+      errcode = 'P0001',
+      message = 'ANULACION_REQUIERE_CLAVE_ADMINISTRATIVA';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger recibos_proteger_anulacion_administrativa
+before update of estado on public.recibos
+for each row
+when (old.estado is distinct from new.estado and new.estado = 'anulado')
+execute function public.siemc_proteger_anulacion_administrativa();
+
+create trigger atenciones_proteger_anulacion_administrativa
+before update of estado on public.atenciones
+for each row
+when (old.estado is distinct from new.estado and new.estado = 'anulada')
+execute function public.siemc_proteger_anulacion_administrativa();
 
 create or replace function public.abrir_caja(
   p_monto_inicial numeric,
@@ -390,9 +420,14 @@ begin
 end;
 $$;
 
+-- Eliminar la firma histórica sin clave para impedir que pueda invocarse como
+-- una ruta alternativa sin autorización administrativa.
+drop function if exists public.anular_recibo(uuid, text);
+
 create or replace function public.anular_recibo(
   p_recibo_id uuid,
-  p_motivo text
+  p_motivo text,
+  p_clave_administrativa text
 )
 returns table (
   recibo_id uuid,
@@ -412,14 +447,48 @@ returns table (
   motivo_anulacion text
 )
 language plpgsql
+security definer
+set search_path = ''
 as $$
 declare
   v_motivo text := regexp_replace(btrim(coalesce(p_motivo, '')), '\s+', ' ', 'g');
+  v_clave_configurada text;
   v_recibo public.recibos%rowtype;
   v_pago public.pagos%rowtype;
   v_estado_caja text;
   v_estado_atencion text;
 begin
+  if char_length(coalesce(p_clave_administrativa, '')) not between 12 and 128 then
+    raise exception using
+      errcode = 'P0001',
+      message = 'CLAVE_ANULACION_INVALIDA';
+  end if;
+
+  select secreto.decrypted_secret
+  into v_clave_configurada
+  from vault.decrypted_secrets as secreto
+  where secreto.name = 'siemc_clave_anulacion'
+  order by secreto.updated_at desc
+  limit 1;
+
+  if v_clave_configurada is null then
+    raise exception using
+      errcode = 'P0001',
+      message = 'CLAVE_ANULACION_NO_CONFIGURADA';
+  end if;
+
+  if p_clave_administrativa <> v_clave_configurada then
+    raise exception using
+      errcode = 'P0001',
+      message = 'CLAVE_ANULACION_INVALIDA';
+  end if;
+
+  perform pg_catalog.set_config(
+    'siemc.anulacion_autorizada',
+    'true',
+    true
+  );
+
   if char_length(v_motivo) not between 10 and 300 then
     raise exception using
       errcode = 'P0001',
@@ -482,7 +551,7 @@ begin
   returning * into v_recibo;
 
   update public.atenciones
-  set estado = 'pendiente_pago'
+  set estado = 'anulada'
   where id = v_recibo.atencion_id;
 
   insert into public.atencion_eventos (
@@ -494,13 +563,14 @@ begin
   )
   values (
     v_recibo.atencion_id,
-    'recibo_anulado',
+    'procedimiento_anulado',
     'pagada',
-    'pendiente_pago',
+    'anulada',
     jsonb_build_object(
       'recibo_id', v_recibo.id,
       'numero_recibo', v_recibo.numero_recibo,
-      'motivo', v_motivo
+      'motivo', v_motivo,
+      'operador_id', auth.uid()
     )
   );
 
@@ -761,4 +831,3 @@ begin
   order by r.emitido_en desc;
 end;
 $$;
-

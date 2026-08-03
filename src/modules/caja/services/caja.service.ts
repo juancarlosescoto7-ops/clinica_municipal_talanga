@@ -37,6 +37,18 @@ export class CashServiceError extends Error {
   }
 }
 
+function rpcErrorMessage(message: string): string {
+  if (message.includes("CLAVE_ANULACION_NO_CONFIGURADA")) {
+    return "La clave administrativa de anulación todavía no está configurada en Supabase Vault.";
+  }
+
+  if (message.includes("CLAVE_ANULACION_INVALIDA")) {
+    return "La clave administrativa no es correcta.";
+  }
+
+  return message;
+}
+
 async function executeRpc<TResult>(
   executor: RpcExecutor,
   functionName: string,
@@ -46,7 +58,7 @@ async function executeRpc<TResult>(
 
   if (response.error) {
     throw new CashServiceError(
-      response.error.message,
+      rpcErrorMessage(response.error.message),
       response.error.code,
     );
   }
@@ -140,6 +152,7 @@ export function createCashService(executor: RpcExecutor): CashService {
         {
           p_recibo_id: values.receiptId,
           p_motivo: values.reason,
+          p_clave_administrativa: values.adminKey,
         },
       );
 
