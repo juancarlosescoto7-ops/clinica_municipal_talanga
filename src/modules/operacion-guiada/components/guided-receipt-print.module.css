@@ -5,7 +5,11 @@
 @media print {
   :global(html),
   :global(body) {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
     min-width: 0;
+    overflow: hidden;
     color: #000;
     background: #fff;
   }
@@ -23,8 +27,12 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    display: block;
+    box-sizing: border-box;
+    width: 210mm;
+    height: 297mm;
+    display: grid;
+    grid-template-rows: repeat(2, 148.5mm);
+    overflow: hidden;
     color: #000;
     background: #fff;
     font-family: "Courier New", Courier, monospace;
@@ -34,11 +42,17 @@
 
   .copy {
     box-sizing: border-box;
-    height: 131mm;
+    height: 148.5mm;
     display: flex;
     flex-direction: column;
-    padding: 1mm 0;
+    padding: 7mm 13mm;
     break-inside: avoid;
+    page-break-inside: avoid;
+    overflow: hidden;
+  }
+
+  .copy + .copy {
+    border-top: 0.5pt dashed #000;
   }
 
   .header {
@@ -237,8 +251,7 @@
     grid-template-columns: 40mm minmax(0, 1fr);
     align-items: end;
     gap: 8mm;
-    margin-top: auto;
-    padding-top: 4mm;
+    margin-top: 7mm;
   }
 
   .footer > div {

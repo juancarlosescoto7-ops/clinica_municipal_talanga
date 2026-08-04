@@ -10,8 +10,8 @@ import styles from "./guided-receipt-print.module.css";
 
 const RECEIPT_PAGE_STYLE = `
   @page {
-    size: 8.5in 5.5in;
-    margin: 4.2mm 13mm;
+    size: A4 portrait;
+    margin: 0;
   }
 `;
 
@@ -46,6 +46,7 @@ interface GuidedReceiptPrintProps {
 }
 
 interface ReceiptCopyProps {
+  copyLabel: string;
   receipt: GuidedReceiptPrintData;
 }
 
@@ -71,9 +72,9 @@ function paymentDetail(receipt: GuidedReceiptPrintData): string {
     .join(" · ");
 }
 
-function ReceiptCopy({ receipt }: ReceiptCopyProps) {
+function ReceiptCopy({ copyLabel, receipt }: ReceiptCopyProps) {
   return (
-    <section className={styles.copy}>
+    <section aria-label={copyLabel} className={styles.copy}>
       <header className={styles.header}>
         <div className={styles.brandBlock}>
           <div>
@@ -83,7 +84,7 @@ function ReceiptCopy({ receipt }: ReceiptCopyProps) {
           </div>
         </div>
         <div className={styles.receiptIdentity}>
-          <span>PACIENTE · ORIGINAL</span>
+          <span>{copyLabel}</span>
           <strong>{formatReceiptNumber(receipt.receiptNumber)}</strong>
           <small>{formatDateTime(receipt.issuedAt)}</small>
         </div>
@@ -187,7 +188,8 @@ export function GuidedReceiptPrint({ receipt }: GuidedReceiptPrintProps) {
         aria-label="Recibo para impresión"
         className={styles.printRoot}
       >
-        <ReceiptCopy receipt={receipt} />
+        <ReceiptCopy copyLabel="PACIENTE · ORIGINAL" receipt={receipt} />
+        <ReceiptCopy copyLabel="CLÍNICA · COPIA" receipt={receipt} />
       </article>
     </>
   );
