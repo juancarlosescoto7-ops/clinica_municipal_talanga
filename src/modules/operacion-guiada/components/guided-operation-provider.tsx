@@ -20,17 +20,19 @@ interface GuidedOperationProviderProps {
   children: ReactNode;
 }
 
-const initialState: GuidedOperationState = {
-  step: "opening",
-  activeAttentionId: null,
-  activeAttentionNumber: null,
-  activePatient: null,
-  selectedServiceIds: [],
-  cases: [],
-  nextAttentionNumber: 1,
-  feedback: null,
-  closingDeposit: null,
-};
+export function createInitialGuidedOperationState(): GuidedOperationState {
+  return {
+    step: "opening",
+    activeAttentionId: null,
+    activeAttentionNumber: null,
+    activePatient: null,
+    selectedServiceIds: [],
+    cases: [],
+    nextAttentionNumber: 1,
+    feedback: null,
+    closingDeposit: null,
+  };
+}
 
 const GuidedOperationContext =
   createContext<GuidedOperationContextValue | null>(null);
@@ -38,7 +40,9 @@ const GuidedOperationContext =
 export function GuidedOperationProvider({
   children,
 }: GuidedOperationProviderProps) {
-  const [state, setState] = useState<GuidedOperationState>(initialState);
+  const [state, setState] = useState<GuidedOperationState>(
+    createInitialGuidedOperationState,
+  );
 
   return (
     <GuidedOperationContext.Provider value={{ state, setState }}>

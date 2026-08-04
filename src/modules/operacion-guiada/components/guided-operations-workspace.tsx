@@ -49,7 +49,10 @@ import type {
   GuidedServiceDefinition,
 } from "../types/operacion-guiada.types";
 import { GuidedClosingPrint } from "./guided-closing-print";
-import { useGuidedOperation } from "./guided-operation-provider";
+import {
+  createInitialGuidedOperationState,
+  useGuidedOperation,
+} from "./guided-operation-provider";
 import { ProcedureAnnulmentForm } from "./procedure-annulment-form";
 import {
   GuidedReceiptPrint,
@@ -231,6 +234,7 @@ export function GuidedOperationsWorkspace() {
   const [closingValues, setClosingValues] =
     useState<ClosingFormValues>(emptyClosingValues);
   const [closingError, setClosingError] = useState("");
+  const [showOpeningDialog, setShowOpeningDialog] = useState(false);
   const [receiptToPrint, setReceiptToPrint] =
     useState<GuidedReceiptPrintData | null>(null);
   const [procedureToAnnul, setProcedureToAnnul] =
@@ -507,13 +511,27 @@ export function GuidedOperationsWorkspace() {
         ...current,
         session: mapCashSessionRpcRow(opened),
       }));
-      setState((current) => ({
-        ...current,
-        activeAttentionId: null,
-        activeAttentionNumber: null,
+      setState({
+        ...createInitialGuidedOperationState(),
         step: "patient",
         feedback: "Caja abierta. Registre al primer paciente.",
-      }));
+      });
+      setPatientValues(emptyPatientValues);
+      setPatientError("");
+      setServiceError("");
+      setShowAbandonment(false);
+      setAbandonmentReason("");
+      setPaymentMethod(null);
+      setCashReceived("");
+      setTransferBank("");
+      setTransferReference("");
+      setPaymentError("");
+      setClosingValues(emptyClosingValues);
+      setClosingError("");
+      setReceiptToPrint(null);
+      setProcedureToAnnul(null);
+      lastAutoPrintedReceiptId.current = null;
+      setShowOpeningDialog(false);
       return {
         success: true,
         message: "Caja abierta y guardada en Supabase.",
@@ -1843,9 +1861,16 @@ export function GuidedOperationsWorkspace() {
             >
               Imprimir cierre
             </button>
-            <Link className={styles.primaryButton} href="/clinica/reportes">
+            <Link className={styles.secondaryButton} href="/clinica/reportes">
               Ver informe mensual
             </Link>
+            <button
+              className={styles.primaryButton}
+              onClick={() => setShowOpeningDialog(true)}
+              type="button"
+            >
+              Abrir nueva jornada
+            </button>
           </div>
         </header>
         <section className={styles.closedSummary}>
@@ -1881,6 +1906,14 @@ export function GuidedOperationsWorkspace() {
           deposit={state.closingDeposit}
           session={cashState.session}
         />
+        {showOpeningDialog ? (
+          <ModuleDialog
+            onClose={() => setShowOpeningDialog(false)}
+            title="Abrir nueva jornada"
+          >
+            <CashOpeningForm onSubmit={handleOpen} />
+          </ModuleDialog>
+        ) : null}
       </div>
     );
   }

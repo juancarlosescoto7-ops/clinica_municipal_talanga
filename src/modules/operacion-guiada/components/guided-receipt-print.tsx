@@ -1,4 +1,3 @@
-import { MunicipalLogo } from "@/components/shared/municipal-logo";
 import type { PaymentMethod } from "@/modules/caja/types/caja.types";
 import {
   formatDateTime,
@@ -8,6 +7,13 @@ import {
 import { formatHnl } from "../utils/operacion-guiada-formatters";
 
 import styles from "./guided-receipt-print.module.css";
+
+const RECEIPT_PAGE_STYLE = `
+  @page {
+    size: 8.5in 5.5in;
+    margin: 4.2mm 13mm;
+  }
+`;
 
 export interface GuidedReceiptPrintService {
   code: string;
@@ -40,7 +46,6 @@ interface GuidedReceiptPrintProps {
 }
 
 interface ReceiptCopyProps {
-  copyLabel: "PACIENTE · ORIGINAL" | "CLÍNICA · COPIA";
   receipt: GuidedReceiptPrintData;
 }
 
@@ -66,17 +71,11 @@ function paymentDetail(receipt: GuidedReceiptPrintData): string {
     .join(" · ");
 }
 
-function ReceiptCopy({ copyLabel, receipt }: ReceiptCopyProps) {
+function ReceiptCopy({ receipt }: ReceiptCopyProps) {
   return (
     <section className={styles.copy}>
       <header className={styles.header}>
         <div className={styles.brandBlock}>
-          <MunicipalLogo
-            alt="Escudo de la Municipalidad de Talanga"
-            className={styles.municipalLogo}
-            height={46}
-            width={44}
-          />
           <div>
             <span className={styles.organization}>Clínica Municipal</span>
             <h1>Recibo de pago</h1>
@@ -84,7 +83,7 @@ function ReceiptCopy({ copyLabel, receipt }: ReceiptCopyProps) {
           </div>
         </div>
         <div className={styles.receiptIdentity}>
-          <span>{copyLabel}</span>
+          <span>PACIENTE · ORIGINAL</span>
           <strong>{formatReceiptNumber(receipt.receiptNumber)}</strong>
           <small>{formatDateTime(receipt.issuedAt)}</small>
         </div>
@@ -182,12 +181,14 @@ export function GuidedReceiptPrint({ receipt }: GuidedReceiptPrintProps) {
   }
 
   return (
-    <article
-      aria-label="Recibo doble para impresión"
-      className={styles.printRoot}
-    >
-      <ReceiptCopy copyLabel="PACIENTE · ORIGINAL" receipt={receipt} />
-      <ReceiptCopy copyLabel="CLÍNICA · COPIA" receipt={receipt} />
-    </article>
+    <>
+      <style>{RECEIPT_PAGE_STYLE}</style>
+      <article
+        aria-label="Recibo para impresión"
+        className={styles.printRoot}
+      >
+        <ReceiptCopy receipt={receipt} />
+      </article>
+    </>
   );
 }
