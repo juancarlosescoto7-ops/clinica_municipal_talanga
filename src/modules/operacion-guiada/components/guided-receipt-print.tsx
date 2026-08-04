@@ -1,8 +1,11 @@
+import { QRCodeSVG } from "qrcode.react";
+
 import type { PaymentMethod } from "@/modules/caja/types/caja.types";
 import {
   formatDateTime,
   getPaymentMethodLabel,
 } from "@/modules/caja/utils/caja-formatters";
+import { getReceiptVerificationUrl } from "@/utils/receipt-verification-url";
 
 import { formatHnl } from "../utils/operacion-guiada-formatters";
 
@@ -42,11 +45,13 @@ export interface GuidedReceiptPrintData {
 }
 
 interface GuidedReceiptPrintProps {
+  isReprint?: boolean;
   receipt: GuidedReceiptPrintData | null;
 }
 
 interface ReceiptCopyProps {
   copyLabel: string;
+  isReprint: boolean;
   receipt: GuidedReceiptPrintData;
 }
 
@@ -72,7 +77,9 @@ function paymentDetail(receipt: GuidedReceiptPrintData): string {
     .join(" · ");
 }
 
-function ReceiptCopy({ copyLabel, receipt }: ReceiptCopyProps) {
+function ReceiptCopy({ copyLabel, isReprint, receipt }: ReceiptCopyProps) {
+  const verificationUrl = getReceiptVerificationUrl(receipt.receiptId);
+
   return (
     <section aria-label={copyLabel} className={styles.copy}>
       <header className={styles.header}>
@@ -83,6 +90,9 @@ function ReceiptCopy({ copyLabel, receipt }: ReceiptCopyProps) {
             <small>SIEMC · Comprobante válido</small>
           </div>
         </div>
+        {isReprint ? (
+          <strong className={styles.reprintStamp}>REIMPRESIÓN</strong>
+        ) : null}
         <div className={styles.receiptIdentity}>
           <span>{copyLabel}</span>
           <strong>{formatReceiptNumber(receipt.receiptNumber)}</strong>
@@ -163,20 +173,37 @@ function ReceiptCopy({ copyLabel, receipt }: ReceiptCopyProps) {
       </div>
 
       <footer className={styles.footer}>
-        <div>
+        <div className={styles.signatureBlock}>
           <span className={styles.signatureLine} />
           <strong>Recibido por</strong>
         </div>
-        <p>
+        <p className={styles.verificationText}>
           Conserve este recibo como respaldo del pago. Código de control: {" "}
-          <strong>{receipt.receiptId.slice(0, 8).toUpperCase()}</strong>
+          <strong>{receipt.receiptId.slice(0, 8).toUpperCase()}</strong>.
+          Escanee el código para comprobar su vigencia en SIEMC.
         </p>
+        <div className={styles.qrBlock}>
+          <QRCodeSVG
+            bgColor="#ffffff"
+            className={styles.receiptQr}
+            fgColor="#000000"
+            level="M"
+            marginSize={4}
+            size={120}
+            title={`Validar recibo ${formatReceiptNumber(receipt.receiptNumber)}`}
+            value={verificationUrl}
+          />
+          <small>Validar recibo</small>
+        </div>
       </footer>
     </section>
   );
 }
 
-export function GuidedReceiptPrint({ receipt }: GuidedReceiptPrintProps) {
+export function GuidedReceiptPrint({
+  isReprint = false,
+  receipt,
+}: GuidedReceiptPrintProps) {
   if (!receipt) {
     return null;
   }
@@ -185,11 +212,21 @@ export function GuidedReceiptPrint({ receipt }: GuidedReceiptPrintProps) {
     <>
       <style>{RECEIPT_PAGE_STYLE}</style>
       <article
-        aria-label="Recibo para impresión"
+        aria-label={
+          isReprint ? "Reimpresión de recibo" : "Recibo para impresión"
+        }
         className={styles.printRoot}
       >
-        <ReceiptCopy copyLabel="PACIENTE · ORIGINAL" receipt={receipt} />
-        <ReceiptCopy copyLabel="CLÍNICA · COPIA" receipt={receipt} />
+        <ReceiptCopy
+          copyLabel={isReprint ? "PACIENTE · COPIA" : "PACIENTE · ORIGINAL"}
+          isReprint={isReprint}
+          receipt={receipt}
+        />
+        <ReceiptCopy
+          copyLabel="CLÍNICA · COPIA"
+          isReprint={isReprint}
+          receipt={receipt}
+        />
       </article>
     </>
   );

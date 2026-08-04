@@ -99,6 +99,19 @@
     text-align: right;
   }
 
+  .reprintStamp {
+    align-self: center;
+    padding: 1.3mm 2.4mm;
+    border: 1.5pt solid #000;
+    color: #000;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    transform: rotate(-3deg);
+  }
+
   .receiptIdentity span,
   .receiptIdentity strong {
     display: block;
@@ -248,13 +261,13 @@
 
   .footer {
     display: grid;
-    grid-template-columns: 40mm minmax(0, 1fr);
-    align-items: end;
-    gap: 8mm;
+    grid-template-columns: 36mm minmax(0, 1fr) 28mm;
+    align-items: start;
+    gap: 5mm;
     margin-top: 7mm;
   }
 
-  .footer > div {
+  .signatureBlock {
     text-align: center;
   }
 
@@ -267,18 +280,40 @@
     font-weight: 700;
   }
 
-  .footer > div strong {
+  .signatureBlock strong {
     display: block;
     margin-top: 0.8mm;
     color: #000;
     font-size: 7pt;
   }
 
-  .footer p {
+  .verificationText {
     margin: 0;
     color: #000;
     font-size: 7pt;
     text-align: right;
+  }
+
+  .qrBlock {
+    color: #000;
+    text-align: center;
+  }
+
+  .receiptQr {
+    width: 26mm;
+    height: 26mm;
+    display: block;
+    margin: 0 auto;
+    background: #fff !important;
+    print-color-adjust: exact;
+  }
+
+  .qrBlock small {
+    display: block;
+    margin-top: 0.8mm;
+    color: #000;
+    font-size: 6.5pt;
+    font-weight: 700;
   }
 
 }

@@ -1,0 +1,191 @@
+.workspace {
+  display: grid;
+  gap: 24px;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.pageHeader h1 {
+  margin: 0;
+  color: var(--ink-950);
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  font-weight: 680;
+  letter-spacing: -0.035em;
+}
+
+.pageHeader > div > p:last-child {
+  max-width: 720px;
+  margin: 10px 0 0;
+  color: var(--ink-500);
+  font-size: 0.9rem;
+}
+
+.eyebrow {
+  margin: 0 0 7px;
+  color: var(--green-text-700);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.formCard,
+.securityCard {
+  padding: clamp(22px, 3vw, 32px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.formCard {
+  display: grid;
+  gap: 20px;
+}
+
+.cardHeading {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.cardHeading > span,
+.securityIcon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--green-text-800);
+  background: var(--green-50);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.cardHeading h2,
+.securityCard h2 {
+  margin: 0;
+  color: var(--ink-950);
+  font-size: 1rem;
+}
+
+.cardHeading p {
+  margin: 3px 0 0;
+  color: var(--ink-500);
+  font-size: 0.76rem;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span {
+  color: var(--ink-800);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.field input {
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  color: var(--ink-950);
+  background: var(--field-surface);
+  outline: none;
+}
+
+.field input:focus {
+  border-color: var(--green-700);
+  box-shadow: 0 0 0 3px var(--green-100);
+}
+
+.field small {
+  color: var(--ink-500);
+  font-size: 0.7rem;
+}
+
+.primaryButton {
+  width: fit-content;
+  min-height: 42px;
+  padding: 9px 16px;
+  border: 1px solid var(--green-900);
+  border-radius: var(--radius-md);
+  color: var(--white);
+  background: var(--green-900);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 680;
+}
+
+.primaryButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.securityCard {
+  display: grid;
+  gap: 15px;
+}
+
+.securityCard ul {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.securityCard li {
+  position: relative;
+  padding-left: 19px;
+  color: var(--ink-650);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.securityCard li::before {
+  position: absolute;
+  top: 0.65em;
+  left: 1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green-700);
+  content: "";
+}
+
+.error,
+.feedback {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  color: var(--danger-text);
+  background: var(--danger-surface);
+  font-size: 0.78rem;
+}
+
+.feedback {
+  border-color: var(--success-border);
+  color: var(--success-text);
+  background: var(--success-surface);
+}
+
+@media (max-width: 800px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+}

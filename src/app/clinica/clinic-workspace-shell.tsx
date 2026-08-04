@@ -33,9 +33,19 @@ function ClinicWorkspaceContent({
       : state.session?.status === "cerrada"
         ? "closed"
         : "pending";
+  const activeNavigationItem = navigationSections
+    .flatMap((section) => section.items)
+    .find(
+      (item) =>
+        pathname === item.href || pathname.startsWith(`${item.href}/`),
+    );
+  const isAvailableWithoutOpenDay =
+    activeNavigationItem?.isEntryPoint === true ||
+    activeNavigationItem?.requiresOpenDay === false;
   const openingRequired =
     !isLoading &&
     operationalDayStatus === "pending" &&
+    !isAvailableWithoutOpenDay &&
     pathname !== CLINIC_ENTRY_PATH;
 
   useEffect(() => {

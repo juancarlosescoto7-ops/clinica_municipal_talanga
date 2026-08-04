@@ -50,5 +50,33 @@ create table public.arqueos (
         and justificacion is not null
         and char_length(btrim(justificacion)) between 10 and 500
       )
-    )
+  )
 );
+
+-- Compatibilidad con instalaciones anteriores donde `arqueos` ya existía con
+-- una estructura parcial. Las columnas financieras se agregan como anulables
+-- para conservar filas históricas que no tienen equivalencia exacta; todos
+-- los nuevos arqueos creados por las RPC completan estos campos.
+alter table public.arqueos
+  add column if not exists numero_arqueo bigint
+  generated always as identity;
+
+alter table public.arqueos
+  add column if not exists caja_sesion_id uuid
+  references public.caja_sesiones (id)
+  on update restrict
+  on delete restrict;
+
+alter table public.arqueos
+  add column if not exists fecha date,
+  add column if not exists total_efectivo numeric(12, 2),
+  add column if not exists total_transferencias numeric(12, 2),
+  add column if not exists total_cobrado numeric(12, 2),
+  add column if not exists efectivo_esperado numeric(12, 2),
+  add column if not exists efectivo_declarado numeric(12, 2),
+  add column if not exists diferencia numeric(12, 2),
+  add column if not exists estado text default 'borrador',
+  add column if not exists justificacion text,
+  add column if not exists confirmado_en timestamptz,
+  add column if not exists created_at timestamptz default now(),
+  add column if not exists updated_at timestamptz default now();

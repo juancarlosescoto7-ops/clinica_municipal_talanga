@@ -5,7 +5,8 @@ export type NavigationIcon =
   | "reconciliation"
   | "deposits"
   | "reports"
-  | "commissions";
+  | "commissions"
+  | "reprint";
 
 export type ClinicRouteType =
   | "daily-operation"
@@ -15,6 +16,7 @@ export type ClinicRouteType =
 
 export const CLINIC_PATHS = {
   cash: "/clinica/caja",
+  reprints: "/clinica/reimpresiones",
   patients: "/clinica/pacientes",
   reconciliations: "/clinica/arqueos",
   deposits: "/clinica/depositos",
@@ -31,6 +33,7 @@ export interface NavigationItem {
   icon: NavigationIcon;
   type: ClinicRouteType;
   isEntryPoint?: boolean;
+  requiresOpenDay?: boolean;
 }
 
 export interface NavigationSection {

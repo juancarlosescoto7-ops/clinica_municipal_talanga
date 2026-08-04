@@ -79,6 +79,18 @@ function NavigationIconGraphic({ icon }: NavigationIconProps) {
     );
   }
 
+  if (icon === "reprint") {
+    return (
+      <svg
+        aria-hidden="true"
+        className="navigation__icon"
+        viewBox="0 0 24 24"
+      >
+        <path d="M7 8V4h10v4M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v6H7zM17.5 11.5h.01" />
+      </svg>
+    );
+  }
+
   if (icon === "services") {
     return (
       <svg
@@ -141,7 +153,9 @@ export function ClinicNavigation({
                 pathname === item.href ||
                 pathname.startsWith(`${item.href}/`);
               const isLocked =
-                operationalDayStatus === "pending" && !item.isEntryPoint;
+                operationalDayStatus === "pending" &&
+                !item.isEntryPoint &&
+                item.requiresOpenDay !== false;
 
               return (
                 <Link

@@ -17,6 +17,13 @@ const clinicNavigation: readonly NavigationSection[] = [
         type: "daily-operation",
         isEntryPoint: true,
       },
+      {
+        label: "Reimprimir recibo",
+        href: CLINIC_PATHS.reprints,
+        icon: "reprint",
+        type: "daily-operation",
+        requiresOpenDay: false,
+      },
     ],
   },
   {

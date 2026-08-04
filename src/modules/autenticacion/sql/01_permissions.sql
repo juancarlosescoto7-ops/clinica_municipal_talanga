@@ -25,6 +25,13 @@ grant execute on all functions in schema public to authenticated;
 -- desde el Data API. La RPC protegida conserva los privilegios de su dueño.
 revoke update, delete on public.recibos from authenticated;
 revoke update, delete on public.pagos from authenticated;
+revoke select, insert, update, delete
+  on public.recibo_reimpresiones from authenticated;
+
+-- El QR puede comprobarse sin iniciar sesión. La RPC SECURITY DEFINER expone
+-- exclusivamente los datos mínimos del comprobante y no habilita sus tablas.
+grant usage on schema public to anon;
+grant execute on function public.verificar_recibo_publico(uuid) to anon;
 
 -- Mantener la misma política para objetos que se agreguen en futuras versiones.
 alter default privileges in schema public

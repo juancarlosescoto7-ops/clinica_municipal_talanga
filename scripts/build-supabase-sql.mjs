@@ -32,6 +32,9 @@ const sources = [
   "src/modules/operacion-guiada/sql/01_tables.sql",
   "src/modules/operacion-guiada/sql/02_indexes.sql",
   "src/modules/operacion-guiada/sql/03_functions.sql",
+  "src/modules/reimpresion/sql/01_tables.sql",
+  "src/modules/reimpresion/sql/02_indexes.sql",
+  "src/modules/reimpresion/sql/03_functions.sql",
   "src/modules/reportes/sql/01_tables.sql",
   "src/modules/reportes/sql/02_indexes.sql",
   "src/modules/reportes/sql/03_functions.sql",
@@ -81,6 +84,9 @@ const output = [
   sections.join("\n\n"),
   "",
   "commit;",
+  "",
+  "-- Publicar inmediatamente las RPC y columnas nuevas en Supabase Data API.",
+  "notify pgrst, 'reload schema';",
   "",
 ].join("\n");
 
