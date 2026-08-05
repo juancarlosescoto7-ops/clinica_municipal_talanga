@@ -12,4 +12,7 @@ export type {
   GuidedRegisterPatientValues,
   GuidedUnpaidRpcRow,
 } from "./types/operacion-guiada.types";
-export type { GuidedReceiptPrintData } from "./components/guided-receipt-print";
+export type {
+  GuidedReceiptPrintData,
+  ReceiptPrintMarginsMm,
+} from "./components/guided-receipt-print";

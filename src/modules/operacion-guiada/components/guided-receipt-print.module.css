@@ -2,12 +2,18 @@
   display: none;
 }
 
+@page {
+  size: A5 landscape;
+  margin: 0;
+}
+
 @media print {
   :global(html),
   :global(body) {
     width: 210mm;
-    height: 297mm;
+    height: 148mm;
     margin: 0;
+    padding: 0;
     min-width: 0;
     overflow: hidden;
     color: #000;
@@ -29,30 +35,36 @@
     left: 0;
     box-sizing: border-box;
     width: 210mm;
-    height: 297mm;
-    display: grid;
-    grid-template-rows: repeat(2, 148.5mm);
+    height: 148mm;
+    display: block;
     overflow: hidden;
     color: #000;
     background: #fff;
     font-family: "Courier New", Courier, monospace;
-    font-size: 8.5pt;
-    line-height: 1.18;
+    font-size: 9.5pt;
+    line-height: 1.22;
+    break-inside: avoid-page;
+    break-before: avoid-page;
+    break-after: auto;
+    page-break-inside: avoid;
+    page-break-before: avoid;
+    page-break-after: auto;
   }
 
   .copy {
     box-sizing: border-box;
-    height: 148.5mm;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 7mm 13mm;
-    break-inside: avoid;
+    justify-content: center;
+    padding: var(--receipt-margin-top, 8mm)
+      var(--receipt-margin-right, 11mm)
+      var(--receipt-margin-bottom, 8mm)
+      var(--receipt-margin-left, 11mm);
+    break-inside: avoid-page;
     page-break-inside: avoid;
     overflow: hidden;
-  }
-
-  .copy + .copy {
-    border-top: 0.5pt dashed #000;
   }
 
   .header {
@@ -72,7 +84,7 @@
 
   .organization {
     color: #000;
-    font-size: 7.5pt;
+    font-size: 8.5pt;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -81,7 +93,7 @@
   .header h1 {
     margin: 0.6mm 0 0;
     color: #000;
-    font-size: 15pt;
+    font-size: 17pt;
     font-weight: 700;
     line-height: 1.1;
   }
@@ -91,7 +103,7 @@
     display: block;
     margin-top: 0.6mm;
     color: #000;
-    font-size: 7.5pt;
+    font-size: 8pt;
   }
 
   .receiptIdentity {
@@ -119,7 +131,7 @@
 
   .receiptIdentity span {
     color: #000;
-    font-size: 7.5pt;
+    font-size: 8pt;
     font-weight: 700;
     letter-spacing: 0.04em;
   }
@@ -127,7 +139,7 @@
   .receiptIdentity strong {
     margin-top: 0.5mm;
     color: #000;
-    font-size: 12pt;
+    font-size: 13pt;
     font-weight: 700;
   }
 
@@ -159,7 +171,7 @@
   .identityGrid dt,
   .paymentSummary dt {
     color: #000;
-    font-size: 7pt;
+    font-size: 7.5pt;
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -177,12 +189,12 @@
     width: 100%;
     margin-top: 2.5mm;
     border-collapse: collapse;
-    font-size: 8pt;
+    font-size: 9pt;
   }
 
   .servicesTable th,
   .servicesTable td {
-    padding: 1.3mm 1.8mm;
+    padding: 1.5mm 1.8mm;
     border-bottom: 1pt solid #000;
     text-align: left;
     vertical-align: top;
@@ -190,7 +202,7 @@
 
   .servicesTable th {
     color: #000;
-    font-size: 7pt;
+    font-size: 7.5pt;
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -208,7 +220,7 @@
   .servicesTable small {
     margin-top: 0.3mm;
     color: #000;
-    font-size: 7pt;
+    font-size: 7.5pt;
   }
 
   .numeric {
@@ -247,7 +259,7 @@
 
   .total span {
     color: #000;
-    font-size: 7pt;
+    font-size: 7.5pt;
     font-weight: 700;
     text-transform: uppercase;
   }
@@ -255,7 +267,7 @@
   .total strong {
     margin-top: 0.5mm;
     color: #000;
-    font-size: 13pt;
+    font-size: 14pt;
     font-weight: 700;
   }
 
@@ -264,7 +276,7 @@
     grid-template-columns: 36mm minmax(0, 1fr) 28mm;
     align-items: start;
     gap: 5mm;
-    margin-top: 7mm;
+    margin-top: 5mm;
   }
 
   .signatureBlock {
@@ -284,13 +296,13 @@
     display: block;
     margin-top: 0.8mm;
     color: #000;
-    font-size: 7pt;
+    font-size: 7.5pt;
   }
 
   .verificationText {
     margin: 0;
     color: #000;
-    font-size: 7pt;
+    font-size: 7.5pt;
     text-align: right;
   }
 
@@ -300,8 +312,8 @@
   }
 
   .receiptQr {
-    width: 26mm;
-    height: 26mm;
+    width: 27mm;
+    height: 27mm;
     display: block;
     margin: 0 auto;
     background: #fff !important;
@@ -312,7 +324,7 @@
     display: block;
     margin-top: 0.8mm;
     color: #000;
-    font-size: 6.5pt;
+    font-size: 7pt;
     font-weight: 700;
   }
 

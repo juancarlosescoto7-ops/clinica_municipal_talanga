@@ -1,4 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
+import type { CSSProperties } from "react";
 
 import type { PaymentMethod } from "@/modules/caja/types/caja.types";
 import {
@@ -11,12 +12,12 @@ import { formatHnl } from "../utils/operacion-guiada-formatters";
 
 import styles from "./guided-receipt-print.module.css";
 
-const RECEIPT_PAGE_STYLE = `
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-`;
+const DEFAULT_RECEIPT_MARGINS_MM: ReceiptPrintMarginsMm = {
+  top: 8,
+  right: 11,
+  bottom: 8,
+  left: 11,
+};
 
 export interface GuidedReceiptPrintService {
   code: string;
@@ -44,8 +45,23 @@ export interface GuidedReceiptPrintData {
   transferReference: string | null;
 }
 
+export interface ReceiptPrintMarginsMm {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+interface ReceiptPrintCssProperties extends CSSProperties {
+  "--receipt-margin-top": string;
+  "--receipt-margin-right": string;
+  "--receipt-margin-bottom": string;
+  "--receipt-margin-left": string;
+}
+
 interface GuidedReceiptPrintProps {
   isReprint?: boolean;
+  marginsMm?: Partial<ReceiptPrintMarginsMm>;
   receipt: GuidedReceiptPrintData | null;
 }
 
@@ -75,6 +91,37 @@ function paymentDetail(receipt: GuidedReceiptPrintData): string {
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+function marginInMillimeters(value: number | undefined, fallback: number) {
+  if (value === undefined || !Number.isFinite(value)) {
+    return `${fallback}mm`;
+  }
+
+  return `${Math.max(0, value)}mm`;
+}
+
+function receiptMarginsStyle(
+  margins: Partial<ReceiptPrintMarginsMm> | undefined,
+): ReceiptPrintCssProperties {
+  return {
+    "--receipt-margin-top": marginInMillimeters(
+      margins?.top,
+      DEFAULT_RECEIPT_MARGINS_MM.top,
+    ),
+    "--receipt-margin-right": marginInMillimeters(
+      margins?.right,
+      DEFAULT_RECEIPT_MARGINS_MM.right,
+    ),
+    "--receipt-margin-bottom": marginInMillimeters(
+      margins?.bottom,
+      DEFAULT_RECEIPT_MARGINS_MM.bottom,
+    ),
+    "--receipt-margin-left": marginInMillimeters(
+      margins?.left,
+      DEFAULT_RECEIPT_MARGINS_MM.left,
+    ),
+  };
 }
 
 function ReceiptCopy({ copyLabel, isReprint, receipt }: ReceiptCopyProps) {
@@ -202,6 +249,7 @@ function ReceiptCopy({ copyLabel, isReprint, receipt }: ReceiptCopyProps) {
 
 export function GuidedReceiptPrint({
   isReprint = false,
+  marginsMm,
   receipt,
 }: GuidedReceiptPrintProps) {
   if (!receipt) {
@@ -209,25 +257,18 @@ export function GuidedReceiptPrint({
   }
 
   return (
-    <>
-      <style>{RECEIPT_PAGE_STYLE}</style>
-      <article
-        aria-label={
-          isReprint ? "Reimpresión de recibo" : "Recibo para impresión"
-        }
-        className={styles.printRoot}
-      >
-        <ReceiptCopy
-          copyLabel={isReprint ? "PACIENTE · COPIA" : "PACIENTE · ORIGINAL"}
-          isReprint={isReprint}
-          receipt={receipt}
-        />
-        <ReceiptCopy
-          copyLabel="CLÍNICA · COPIA"
-          isReprint={isReprint}
-          receipt={receipt}
-        />
-      </article>
-    </>
+    <article
+      aria-label={
+        isReprint ? "Reimpresión de recibo" : "Recibo para impresión"
+      }
+      className={styles.printRoot}
+      style={receiptMarginsStyle(marginsMm)}
+    >
+      <ReceiptCopy
+        copyLabel={isReprint ? "PACIENTE · COPIA" : "PACIENTE · ORIGINAL"}
+        isReprint={isReprint}
+        receipt={receipt}
+      />
+    </article>
   );
 }

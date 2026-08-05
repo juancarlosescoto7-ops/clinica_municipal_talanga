@@ -10,14 +10,18 @@ El módulo agrega la ruta interna `/clinica/reimpresiones` y la ruta pública
   `anular_recibo`.
 - Solo permite recibos con estado `valido`.
 - Registra cada autorización en `recibo_reimpresiones`.
-- Imprime las dos copias A4 con la marca `REIMPRESIÓN`.
+- Imprime temporalmente un recibo por página A5 horizontal en la EPSON LX-350,
+  con la marca `REIMPRESIÓN`.
+- Genera una sola página por recibo, sin escalar un documento tamaño carta.
+- Los márgenes internos predeterminados son 8 mm verticales y 11 mm
+  horizontales; pueden ajustarse mediante `marginsMm` en
+  `GuidedReceiptPrint` para calibrar el área imprimible de la EPSON LX-350.
 
 ## QR y validación pública
 
 Todos los recibos, originales y reimpresiones, incluyen un QR SVG. Su valor es
 la URL absoluta del proyecto más el UUID único del recibo. Por ello dos
-recibos distintos no comparten QR; las dos copias físicas del mismo recibo sí
-comparten su QR porque verifican el mismo comprobante.
+recibos distintos no comparten QR.
 
 La página pública consulta `verificar_recibo_publico` y solo muestra número,
 fecha, monto, moneda y estado. No expone paciente, documento ni datos de pago.
