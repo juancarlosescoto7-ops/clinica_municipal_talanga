@@ -9,6 +9,10 @@ que fueron presentados en el momento de su generación. Incluye encabezado
 institucional, pacientes, exámenes médicos y psicológicos, ingresos,
 comisiones por proveedor, salarios y ganancia general.
 
+La vista imprimible distribuye automáticamente los servicios, egresos,
+responsabilidades del personal y movimientos diarios en hojas A4 adicionales.
+El estado de utilidad presenta la fórmula `ingresos - (comisiones + salarios)`.
+
 ## SQL
 
 1. `sql/01_tables.sql`
@@ -31,10 +35,12 @@ Centro de consultas con catálogo, filtros, indicadores, tablas y tendencias.
 - Tabla y barras visuales.
 - Tipos TypeScript y servicio RPC persistente.
 - Informe mensual consolidado.
+- Paginación A4 dinámica con numeración total actualizada.
+- Estado de ingresos, egresos y utilidad neta.
 
 ## Pendiente
 
-- Exportación CSV/PDF e impresión.
+- Exportación CSV/PDF.
 - Instalación y validación del SQL definitivo en el proyecto nuevo.
 
 ## Componentes

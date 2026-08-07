@@ -438,50 +438,111 @@
 }
 
 .financialResult {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
   margin-top: 12px;
   border: 1px solid #8fa099;
 }
 
-.financialResult h3 {
-  margin: 0;
-  padding: 9px;
-  border-right: 1px solid #aeb9b5;
+.financialResult > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px;
+  border-bottom: 1px solid #aeb9b5;
   background: #eef3f0;
-  font-size: 10px;
 }
 
-.financialResult dl {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.financialResult h3,
+.financialResult header span,
+.financialResult p {
   margin: 0;
 }
 
-.financialResult dl > div {
-  padding: 7px;
+.financialResult header span {
+  color: #52605c;
+  font-size: 8px;
+}
+
+.financialEquation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.financialEquation > div {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-height: 58px;
+  padding: 8px 10px;
   border-right: 1px solid #c7cfcc;
 }
 
-.financialResult dl > div:last-child {
-  border-right: 0;
-  background: #eef3f0;
+.financialEquation > b {
+  display: grid;
+  place-items: center;
+  color: #59635f;
+  font-size: 14px;
 }
 
-.financialResult dt,
-.financialResult dd {
+.financialEquation span {
+  color: #59635f;
+  font-size: 8px;
+}
+
+.financialEquation strong {
+  font-size: 13px;
+}
+
+.financialEquation .netResult,
+.financialEquation .negativeResult {
+  background: #eef3f0;
+  border-right: 0;
+}
+
+.financialEquation .negativeResult {
+  color: #8a2e2e;
+  background: #fbefef;
+}
+
+.expenseBreakdown {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid #c7cfcc;
+}
+
+.expenseBreakdown > div {
+  padding: 6px 9px;
+  border-right: 1px solid #d1d7d5;
+}
+
+.expenseBreakdown > div:last-child {
+  border-right: 0;
+  background: #f7f9f8;
+}
+
+.expenseBreakdown dt,
+.expenseBreakdown dd {
   margin: 0;
 }
 
-.financialResult dt {
+.expenseBreakdown dt {
   color: #59635f;
   font-size: 7px;
 }
 
-.financialResult dd {
+.expenseBreakdown dd {
   margin-top: 2px;
   font-size: 9px;
   font-weight: 800;
+}
+
+.financialResult > p {
+  padding: 5px 9px;
+  border-top: 1px solid #d1d7d5;
+  color: #52605c;
+  font-size: 7px;
 }
 
 .dailySection {
